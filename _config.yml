@@ -16,7 +16,7 @@ timezone: America/Chicago
 
 title: Jinhee (Jennie) Kim # the main title
 
-tagline: M.S. in Artificial Intelligence, UTSA # it will display as the subtitle
+tagline: M.S. in Artificial Intelligence, UT San Antonio # it will display as the subtitle
 
 description: >- # used by seo meta and the atom feed
   AI research, projects, and learning notes.
@@ -28,8 +28,8 @@ url: "https://jinhee-ai-kim.github.io"
 github:
   username: jinhee-ai-kim # change to your GitHub username
 
-twitter:
-  username: twitter_username # change to your Twitter username
+# twitter:
+#   username: twitter_username # change to your Twitter username
 
 social:
   # Change to your full name.
@@ -41,6 +41,8 @@ social:
     # The first element serves as the copyright owner's link
     - https://www.linkedin.com/in/jinhee-ai-kim
     - https://github.com/jinhee-ai-kim # change to your GitHub homepage
+    - https://scholar.google.com
+    - https://kaggle.com
     # Uncomment below to add more social links
     # - https://www.facebook.com/username
     # - https://www.linkedin.com/in/username
