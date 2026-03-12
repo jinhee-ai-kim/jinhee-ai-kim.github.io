@@ -39,10 +39,16 @@ social:
   fediverse_handle: # fill in your fediverse handle. E.g. "@username@domain.com"
   links:
     # The first element serves as the copyright owner's link
-    - https://www.linkedin.com/in/jinhee-ai-kim
-    - https://github.com/jinhee-ai-kim # change to your GitHub homepage
-    - https://scholar.google.com
-    - https://kaggle.com
+    # - https://www.linkedin.com/in/jinhee-ai-kim
+    # - https://github.com/jinhee-ai-kim # change to your GitHub homepage
+    - icon: 'fab fa-linkedin'  # 아이콘 이름을 강제로 지정
+      url: 'https://www.linkedin.com/in/jinhee-ai-kim'
+    - icon: 'fab fa-github'
+      url: 'https://github.com/jinhee-ai-kim'
+    - icon: 'fas fa-graduation-cap'  # 구글 스칼라용 모자 아이콘
+      url: 'https://scholar.google.com'
+    - icon: 'fab fa-kaggle'
+      url: 'https://kaggle.com'
     # Uncomment below to add more social links
     # - https://www.facebook.com/username
     # - https://www.linkedin.com/in/username
