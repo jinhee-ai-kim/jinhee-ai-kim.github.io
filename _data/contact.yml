@@ -10,13 +10,13 @@
   icon: 'fab fa-instagram'
   url: 'https://www.instagram.com/djenniewinnie'
   
-- type: google-scholar
-  icon: 'fas fa-graduation-cap'
-  url: 'https://scholar.google.com'
+# - type: google-scholar
+#   icon: 'fas fa-graduation-cap'
+#   url: 'https://scholar.google.com'
 
-- type: kaggle
-  icon: 'fab fa-kaggle'
-  url: 'https://kaggle.com'
+# - type: kaggle
+#   icon: 'fab fa-kaggle'
+#   url: 'https://kaggle.com'
 
 - type: email
   icon: "fas fa-envelope"
