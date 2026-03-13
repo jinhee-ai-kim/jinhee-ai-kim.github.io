@@ -6,6 +6,8 @@ order: 5
 
 # 👋 Hi there, I'm Jinhee!
 
+---
+
 I am an **M.S. in Artificial Intelligence** student at UTSA, based in San Antonio.  
 Drawing on my experience in the **banking industry**, I am interested in learning how to build reliable and impactful AI solutions for financial data.
 
