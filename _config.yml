@@ -121,10 +121,10 @@ comments:
     issue_term: # < url | pathname | title | ...>
   # Giscus options › https://giscus.app
   giscus:
-    repo: # <gh-username>/<repo>
-    repo_id:
-    category:
-    category_id:
+    repo: "jinhee-ai-kim/jinhee-ai-kim.github.io" # <gh-username>/<repo>
+    repo_id: "R_kgDORlm4VQ"
+    category: "Q&A"
+    category_id: "DIC_kwDORlm4Vc4C4RNT"
     mapping: # optional, default to 'pathname'
     strict: # optional, default to '0'
     input_position: # optional, default to 'bottom'
