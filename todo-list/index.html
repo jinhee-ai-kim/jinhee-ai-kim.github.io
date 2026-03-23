@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -673,12 +673,19 @@ function getRandomColor() {
     return GOAL_COLORS[Math.floor(Math.random() * GOAL_COLORS.length)];
 }
 
+function getRandomColorExcluding(excludeColors) {
+    const available = GOAL_COLORS.filter(c => !excludeColors.includes(c));
+    if (available.length === 0) return getRandomColor();
+    return available[Math.floor(Math.random() * available.length)];
+}
+
 function goalCreate(text) {
+    const usedColors = STATE.goals.map(g => g.color);
     const goal = {
         id: createGoalId(),
         text: text.trim(),
         order: STATE.goals.length,
-        color: getRandomColor()
+        color: getRandomColorExcluding(usedColors)
     };
     STATE.goals.push(goal);
     lsSave();
@@ -1053,6 +1060,22 @@ function modalHide(modalId) {
     if (modalId === 'taskModal') STATE.editingId = null;
 }
 
+function closeTaskModalWithConfirm() {
+    const titleInput = document.getElementById('taskTitle');
+    const titleValue = titleInput ? titleInput.value.trim() : '';
+
+    // If title is empty or it's an existing task being edited, close without asking
+    if (!titleValue || STATE.editingId) {
+        modalHide('taskModal');
+        return;
+    }
+
+    // Title has content - ask for confirmation
+    if (confirm('Close without saving? Any unsaved task will be lost.')) {
+        modalHide('taskModal');
+    }
+}
+
 function openAddModal() {
     STATE.editingId = null;
     document.getElementById('modalTitle').textContent = 'New Task';
@@ -1232,9 +1255,9 @@ function wireEvents() {
 
     // Task Modal
     document.getElementById('openAddTaskModal').addEventListener('click', openAddModal);
-    document.getElementById('closeModal').addEventListener('click', () => modalHide('taskModal'));
+    document.getElementById('closeModal').addEventListener('click', closeTaskModalWithConfirm);
     document.getElementById('taskModal').addEventListener('click', function(e) {
-        if (e.target === this) modalHide('taskModal');
+        if (e.target === this) closeTaskModalWithConfirm();
     });
     document.getElementById('taskForm').addEventListener('submit', handleFormSubmit);
     document.getElementById('deleteTaskBtn').addEventListener('click', function() {
@@ -1324,7 +1347,7 @@ function wireEvents() {
         }
         if (e.key === 'Escape') {
             if (document.getElementById('taskModal').style.display === 'flex') {
-                modalHide('taskModal');
+                closeTaskModalWithConfirm();
             } else if (document.getElementById('categoryModal').style.display === 'flex') {
                 modalHide('categoryModal');
             }
