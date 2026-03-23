@@ -1,0 +1,1351 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Study Assistant</title>
+
+    <!-- Tailwind CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = { darkMode: 'class' }
+    </script>
+    <!-- SortableJS for drag-and-drop -->
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+
+    <style type="text/tailwindcss">
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .card {
+            @apply bg-white dark:bg-slate-800/80 rounded-2xl border border-slate-200 dark:border-slate-700/60 shadow-sm;
+        }
+
+        .input-field {
+            @apply w-full px-3 py-2
+                   bg-slate-100 dark:bg-slate-700/70
+                   border border-slate-200 dark:border-slate-600/60
+                   rounded-xl text-sm
+                   text-slate-900 dark:text-slate-100
+                   placeholder-slate-400 dark:placeholder-slate-500
+                   focus:outline-none focus:ring-2 focus:ring-blue-500/60 focus:border-transparent
+                   transition-all duration-200;
+        }
+
+        .btn-primary {
+            @apply bg-gradient-to-r from-blue-500 to-indigo-600
+                   text-white font-semibold
+                   rounded-xl
+                   shadow-sm shadow-blue-500/20
+                   hover:shadow-md hover:shadow-blue-500/30
+                   hover:scale-[1.02] active:scale-[0.98]
+                   transition-all duration-200;
+        }
+
+        .btn-ghost {
+            @apply text-slate-500 dark:text-slate-400
+                   hover:text-slate-800 dark:hover:text-slate-100
+                   hover:bg-slate-100 dark:hover:bg-slate-700/60
+                   rounded-lg transition-all duration-200;
+        }
+
+        .task-card {
+            @apply bg-white dark:bg-slate-800
+                   rounded-xl border border-slate-200 dark:border-slate-700/60
+                   shadow-sm p-3.5
+                   cursor-grab active:cursor-grabbing
+                   select-none
+                   transition-all duration-200;
+        }
+        .task-card:hover {
+            @apply shadow-md border-slate-300 dark:border-slate-600 -translate-y-px;
+        }
+        .task-card.sortable-chosen {
+            @apply shadow-xl ring-2 ring-blue-400/40 rotate-1;
+        }
+        .task-card.sortable-ghost {
+            @apply opacity-30 bg-blue-50 dark:bg-blue-900/20;
+        }
+
+        .pri-high   { @apply border-l-4 border-l-red-500; }
+        .pri-medium { @apply border-l-4 border-l-amber-400; }
+        .pri-low    { @apply border-l-4 border-l-emerald-500; }
+
+        .col-wrap {
+            @apply bg-slate-100/70 dark:bg-slate-900/40
+                   rounded-2xl border border-slate-200 dark:border-slate-700/40
+                   p-4;
+        }
+
+        .goal-pill {
+            @apply inline-flex items-center gap-2 px-3 py-1.5
+                   rounded-full text-sm font-medium
+                   cursor-grab active:cursor-grabbing
+                   transition-all duration-200;
+        }
+        .goal-pill:hover {
+            @apply shadow-md;
+        }
+        .goal-pill.sortable-chosen {
+            @apply shadow-lg;
+        }
+        .goal-pill.sortable-ghost {
+            @apply opacity-30;
+        }
+
+        /* Goal color variants */
+        .goal-blue {
+            @apply bg-gradient-to-r from-blue-500/10 to-indigo-500/10
+                   dark:from-blue-500/20 dark:to-indigo-500/20
+                   border border-blue-200 dark:border-blue-700/50
+                   text-blue-700 dark:text-blue-300;
+        }
+        .goal-mint {
+            @apply bg-gradient-to-r from-teal-500/10 to-cyan-500/10
+                   dark:from-teal-500/20 dark:to-cyan-500/20
+                   border border-teal-200 dark:border-teal-700/50
+                   text-teal-700 dark:text-teal-300;
+        }
+        .goal-purple {
+            @apply bg-gradient-to-r from-purple-500/10 to-pink-500/10
+                   dark:from-purple-500/20 dark:to-pink-500/20
+                   border border-purple-200 dark:border-purple-700/50
+                   text-purple-700 dark:text-purple-300;
+        }
+        .goal-green {
+            @apply bg-gradient-to-r from-green-500/10 to-emerald-500/10
+                   dark:from-green-500/20 dark:to-emerald-500/20
+                   border border-green-200 dark:border-green-700/50
+                   text-green-700 dark:text-green-300;
+        }
+        .goal-rose {
+            @apply bg-gradient-to-r from-rose-500/10 to-pink-500/10
+                   dark:from-rose-500/20 dark:to-pink-500/20
+                   border border-rose-200 dark:border-rose-700/50
+                   text-rose-700 dark:text-rose-300;
+        }
+        .goal-amber {
+            @apply bg-gradient-to-r from-amber-500/10 to-orange-500/10
+                   dark:from-amber-500/20 dark:to-orange-500/20
+                   border border-amber-200 dark:border-amber-700/50
+                   text-amber-700 dark:text-amber-300;
+        }
+        .goal-violet {
+            @apply bg-gradient-to-r from-violet-500/10 to-purple-500/10
+                   dark:from-violet-500/20 dark:to-purple-500/20
+                   border border-violet-200 dark:border-violet-700/50
+                   text-violet-700 dark:text-violet-300;
+        }
+        .goal-sky {
+            @apply bg-gradient-to-r from-sky-500/10 to-blue-500/10
+                   dark:from-sky-500/20 dark:to-blue-500/20
+                   border border-sky-200 dark:border-sky-700/50
+                   text-sky-700 dark:text-sky-300;
+        }
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        .fade-up { animation: fadeUp 0.22s ease-out forwards; }
+
+        @keyframes modalPop {
+            from { opacity: 0; transform: scale(0.94) translateY(-8px); }
+            to   { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        .modal-pop { animation: modalPop 0.2s cubic-bezier(0.34, 1.3, 0.64, 1) forwards; }
+
+        ::-webkit-scrollbar { width: 5px; height: 5px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { @apply bg-slate-300 dark:bg-slate-600 rounded-full; }
+
+        .title-editable {
+            @apply cursor-pointer hover:opacity-70 transition-opacity duration-200;
+        }
+
+        /* Goals section hover */
+        #goalsSection:hover #toggleAddGoalBtn {
+            @apply opacity-100 pointer-events-auto;
+        }
+
+        /* Edit icon on title hover */
+        .title-editable:hover .edit-icon {
+            @apply opacity-100;
+        }
+
+        .edit-icon {
+            @apply text-slate-400 dark:text-slate-500 cursor-pointer;
+            background: none !important;
+            -webkit-background-clip: unset !important;
+            background-clip: unset !important;
+        }
+    </style>
+</head>
+
+<body class="min-h-screen bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-300">
+
+<!-- ═══════════════════════════════════════════════════════════
+     2026 GOALS SECTION
+════════════════════════════════════════════════════════════ -->
+<div class="max-w-7xl mx-auto px-5 pt-4 pb-2">
+    <div class="relative overflow-hidden card p-3.5" id="goalsSection">
+        <div class="pointer-events-none absolute inset-0 bg-gradient-to-br from-blue-500/10 via-indigo-400/5 to-purple-500/8 dark:from-blue-500/15 dark:via-indigo-500/8 dark:to-purple-600/10"></div>
+
+        <div class="relative flex items-center gap-2.5 justify-between">
+            <div class="flex items-center gap-2 flex-1 min-w-0">
+                <div class="flex-shrink-0 w-7 h-7 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-sm shadow-sm shadow-blue-500/30">
+                    🎯
+                </div>
+                <div class="text-xs font-bold uppercase tracking-widest text-blue-500 dark:text-blue-400">
+                    My 2026 Goals
+                </div>
+            </div>
+
+            <!-- Goals list (always visible) -->
+            <div id="goalsList" class="flex flex-wrap gap-1.5 relative justify-end">
+            </div>
+
+            <!-- Toggle add goal form button (hidden by default, visible on hover) -->
+            <button id="toggleAddGoalBtn" class="btn-primary px-2 py-1 text-xs flex-shrink-0 opacity-0 pointer-events-none transition-opacity duration-200 whitespace-nowrap">
+                + Add
+            </button>
+        </div>
+
+        <!-- Add goal input (hidden by default) -->
+        <div id="addGoalForm" class="flex gap-2 mt-2" style="display: none;">
+            <input type="text" id="newGoalInput"
+                   placeholder="Enter your 2026 goal…"
+                   class="input-field text-sm flex-1">
+            <button id="saveGoalBtn" class="btn-primary px-3 py-1 text-sm">
+                Save
+            </button>
+            <button id="cancelGoalBtn" class="btn-ghost px-3 py-1 text-sm">
+                Cancel
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     TOP HEADER BAR
+════════════════════════════════════════════════════════════ -->
+<div class="max-w-7xl mx-auto px-5 pb-4">
+    <div class="flex items-center justify-between gap-4">
+        <h1 id="appTitle" class="text-xl font-bold bg-gradient-to-r from-blue-400 via-indigo-400 to-violet-400 bg-clip-text text-transparent title-editable flex items-center gap-2">
+            <span>Study Assistant</span>
+            <span class="edit-icon opacity-0 transition-opacity duration-200 text-slate-400 dark:text-slate-500 text-sm no-gradient hover:opacity-100">✎</span>
+        </h1>
+
+        <div class="flex items-center gap-4">
+            <div class="flex items-center gap-2 text-sm">
+                <span class="text-slate-400 dark:text-slate-500">
+                    <span id="completedCount">0</span>/<span id="totalCount">0</span> done
+                </span>
+                <div class="w-24 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                    <div id="progressFill"
+                         class="h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full transition-all duration-700"
+                         style="width:0%"></div>
+                </div>
+                <span class="text-xs text-slate-400 dark:text-slate-600 w-10" id="progressPct">0%</span>
+            </div>
+
+            <button id="toggleDarkMode"
+                    class="btn-ghost p-1.5 text-lg w-8 h-8 flex items-center justify-center">
+                ☀️
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     MAIN LAYOUT
+════════════════════════════════════════════════════════════ -->
+<div class="max-w-7xl mx-auto px-5 pb-10 flex gap-5">
+
+    <aside class="w-52 flex-shrink-0 space-y-3">
+
+        <div class="card p-3">
+            <input type="text" id="searchInput"
+                   placeholder="🔍  Search tasks…"
+                   class="input-field text-sm">
+        </div>
+
+        <button id="openAddTaskModal"
+                class="btn-primary w-full px-4 py-3 text-sm flex items-center justify-center gap-2">
+            <span class="text-xl font-light leading-none">+</span>
+            <span>New Task</span>
+        </button>
+
+        <div class="card p-4">
+            <h3 class="text-xs font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-3">
+                Subjects
+            </h3>
+            <div class="space-y-0.5" id="categoryList"></div>
+            <div class="mt-3 pt-3 border-t border-slate-200 dark:border-slate-700/50 space-y-2">
+                <input type="text" id="newCategoryInput"
+                       placeholder="New subject…"
+                       class="input-field text-xs py-1.5">
+                <button id="addCategoryBtn"
+                        class="w-full py-1.5 text-xs font-medium text-slate-500 dark:text-slate-400
+                               hover:text-blue-500 dark:hover:text-blue-400
+                               hover:bg-slate-100 dark:hover:bg-slate-700/60
+                               rounded-lg transition-all duration-200">
+                    + Add Subject
+                </button>
+            </div>
+        </div>
+
+        <div class="card p-4">
+            <h3 class="text-xs font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-3">
+                Overview
+            </h3>
+            <div class="space-y-2.5">
+                <div class="flex justify-between items-center">
+                    <span class="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+                        <span class="w-2 h-2 rounded-full bg-blue-500 inline-block"></span>To Do
+                    </span>
+                    <span class="text-sm font-bold text-blue-500" id="todoCount">0</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+                        <span class="w-2 h-2 rounded-full bg-amber-500 inline-block"></span>In Progress
+                    </span>
+                    <span class="text-sm font-bold text-amber-500" id="inprogressCount">0</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500 inline-block"></span>Done
+                    </span>
+                    <span class="text-sm font-bold text-emerald-500" id="doneCount">0</span>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <div class="flex-1 grid grid-cols-3 gap-4">
+
+        <div class="col-wrap">
+            <div class="flex items-center gap-2 mb-4">
+                <span class="w-2.5 h-2.5 rounded-full bg-blue-500 flex-shrink-0"></span>
+                <h2 class="font-bold text-sm text-slate-600 dark:text-slate-300 tracking-wide">TO DO</h2>
+                <span id="todoBadge"
+                      class="ml-auto min-w-[1.4rem] h-5 px-1.5 flex items-center justify-center
+                             rounded-full text-xs font-bold
+                             bg-blue-100 dark:bg-blue-900/50
+                             text-blue-600 dark:text-blue-400">0</span>
+            </div>
+            <div class="space-y-2.5 min-h-[14rem] relative"
+                 data-status="todo"
+                 id="todoList"></div>
+        </div>
+
+        <div class="col-wrap">
+            <div class="flex items-center gap-2 mb-4">
+                <span class="w-2.5 h-2.5 rounded-full bg-amber-500 flex-shrink-0"></span>
+                <h2 class="font-bold text-sm text-slate-600 dark:text-slate-300 tracking-wide">IN PROGRESS</h2>
+                <span id="inprogressBadge"
+                      class="ml-auto min-w-[1.4rem] h-5 px-1.5 flex items-center justify-center
+                             rounded-full text-xs font-bold
+                             bg-amber-100 dark:bg-amber-900/50
+                             text-amber-600 dark:text-amber-400">0</span>
+            </div>
+            <div class="space-y-2.5 min-h-[14rem] relative"
+                 data-status="inprogress"
+                 id="inprogressList"></div>
+        </div>
+
+        <div class="col-wrap">
+            <div class="flex items-center gap-2 mb-4">
+                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 flex-shrink-0"></span>
+                <h2 class="font-bold text-sm text-slate-600 dark:text-slate-300 tracking-wide">DONE</h2>
+                <span id="doneBadge"
+                      class="ml-auto min-w-[1.4rem] h-5 px-1.5 flex items-center justify-center
+                             rounded-full text-xs font-bold
+                             bg-emerald-100 dark:bg-emerald-900/50
+                             text-emerald-600 dark:text-emerald-400">0</span>
+            </div>
+            <div class="space-y-2.5 min-h-[14rem] relative"
+                 data-status="done"
+                 id="doneList"></div>
+        </div>
+
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     ADD / EDIT TASK MODAL
+════════════════════════════════════════════════════════════ -->
+<div id="taskModal"
+     style="display:none"
+     class="fixed inset-0 z-50 flex items-center justify-center p-4
+            bg-black/50 dark:bg-black/70 backdrop-blur-sm">
+    <div class="card w-full max-w-md p-6 modal-pop">
+
+        <div class="flex justify-between items-center mb-5">
+            <h2 class="text-lg font-bold" id="modalTitle">New Task</h2>
+            <button id="closeModal"
+                    class="btn-ghost w-8 h-8 flex items-center justify-center text-xl font-light leading-none">
+                ×
+            </button>
+        </div>
+
+        <form id="taskForm" class="space-y-4" novalidate>
+
+            <div>
+                <label class="block text-xs font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-1.5">
+                    Task Title <span class="text-red-400">*</span>
+                </label>
+                <input type="text" id="taskTitle"
+                       placeholder="What do you need to study?"
+                       class="input-field"
+                       autocomplete="off">
+                <p id="titleError"
+                   class="text-red-500 text-xs mt-1.5 hidden">
+                    Please enter a task title.
+                </p>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-1.5">
+                    Notes
+                </label>
+                <textarea id="taskDescription"
+                          placeholder="Page numbers, references, key topics…"
+                          class="input-field resize-none"
+                          rows="3"></textarea>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-1.5">
+                        Subject
+                    </label>
+                    <select id="taskCategory" class="input-field">
+                        <option value="">None</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-1.5">
+                        Status
+                    </label>
+                    <select id="taskStatus" class="input-field">
+                        <option value="todo">To Do</option>
+                        <option value="inprogress">In Progress</option>
+                        <option value="done">Done</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-1.5">
+                        Priority
+                    </label>
+                    <select id="taskPriority" class="input-field">
+                        <option value="low">🟢 Low</option>
+                        <option value="medium" selected>🟡 Medium</option>
+                        <option value="high">🔴 High</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-1.5">
+                        Due Date
+                    </label>
+                    <input type="date" id="taskDueDate" class="input-field">
+                </div>
+            </div>
+
+            <div class="flex gap-2 pt-1">
+                <button type="submit"
+                        class="btn-primary flex-1 px-4 py-2.5 text-sm">
+                    Save Task
+                </button>
+                <button type="button" id="deleteTaskBtn"
+                        class="px-4 py-2.5 text-sm font-semibold rounded-xl
+                               bg-red-500/10 dark:bg-red-500/15
+                               text-red-500 dark:text-red-400
+                               hover:bg-red-500/20 dark:hover:bg-red-500/25
+                               transition-all duration-200 hidden">
+                    Delete
+                </button>
+            </div>
+
+        </form>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     CATEGORY MODAL
+════════════════════════════════════════════════════════════ -->
+<div id="categoryModal"
+     style="display:none"
+     class="fixed inset-0 z-50 flex items-center justify-center p-4
+            bg-black/50 dark:bg-black/70 backdrop-blur-sm">
+    <div class="card w-full max-w-sm p-6 modal-pop">
+
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-lg font-bold" id="categoryModalTitle">Manage Subject</h2>
+            <button id="closeCategoryModal"
+                    class="btn-ghost w-8 h-8 flex items-center justify-center text-xl font-light leading-none">
+                ×
+            </button>
+        </div>
+
+        <div class="space-y-3" id="categoryModalContent">
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     JAVASCRIPT
+════════════════════════════════════════════════════════════ -->
+<script>
+'use strict';
+
+// Goal color variants
+const GOAL_COLORS = [
+    'goal-blue',
+    'goal-mint',
+    'goal-purple'
+];
+
+// ─── STATE ───────────────────────────────────────────────────────────────────
+const STATE = {
+    tasks:      [],
+    categories: [],
+    goals:      [],
+    appTitle:   "[Your Name]'s TODO-LIST",
+    darkMode:   false,
+    filter:     'all',
+    search:     '',
+    editingId:  null,
+    sortables:  [],
+    goalSortable: null
+};
+
+// ─── LOCAL STORAGE ───────────────────────────────────────────────────────────
+const LS_KEYS = {
+    tasks:      'sa_tasks',
+    categories: 'sa_categories',
+    goals:      'sa_goals',
+    appTitle:   'sa_appTitle',
+    darkMode:   'sa_darkMode'
+};
+
+function lsLoad() {
+    try {
+        const t = localStorage.getItem(LS_KEYS.tasks);
+        const c = localStorage.getItem(LS_KEYS.categories);
+        const g = localStorage.getItem(LS_KEYS.goals);
+        const a = localStorage.getItem(LS_KEYS.appTitle);
+        const d = localStorage.getItem(LS_KEYS.darkMode);
+
+        STATE.tasks      = t ? JSON.parse(t) : [];
+        STATE.categories = c ? JSON.parse(c) : ['Math', 'AI', 'Languages'];
+        STATE.goals      = g ? JSON.parse(g) : [
+            {
+                id: 'goal_default_read10books',
+                text: 'Read 10 books',
+                order: 0,
+                color: 'goal-blue'
+            }
+        ];
+        STATE.appTitle   = a || "[Your Name]'s TODO-LIST";
+
+        // Check system preference on first visit, use saved preference on subsequent visits
+        if (d !== null) {
+            STATE.darkMode = d !== 'false';
+        } else {
+            // Detect system color scheme preference
+            STATE.darkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        }
+    } catch (err) {
+        console.warn('Failed to load from localStorage:', err);
+        STATE.tasks      = [];
+        STATE.categories = ['Math', 'AI', 'Languages'];
+        STATE.goals      = [
+            {
+                id: 'goal_default_read10books',
+                text: 'Read 10 books',
+                order: 0,
+                color: 'goal-blue'
+            }
+        ];
+        STATE.appTitle   = "[Your Name]'s TODO-LIST";
+        STATE.darkMode   = false;
+    }
+}
+
+function lsSave() {
+    try {
+        localStorage.setItem(LS_KEYS.tasks,      JSON.stringify(STATE.tasks));
+        localStorage.setItem(LS_KEYS.categories, JSON.stringify(STATE.categories));
+        localStorage.setItem(LS_KEYS.goals,      JSON.stringify(STATE.goals));
+        localStorage.setItem(LS_KEYS.appTitle,   STATE.appTitle);
+        localStorage.setItem(LS_KEYS.darkMode,   String(STATE.darkMode));
+    } catch (err) {
+        console.warn('Failed to save to localStorage:', err);
+    }
+}
+
+// ─── TASK CRUD ────────────────────────────────────────────────────────────────
+function createTaskId() {
+    return 'task_' + Date.now() + '_' + Math.random().toString(36).slice(2, 9);
+}
+
+function taskCreate(data) {
+    // Calculate order within the same status
+    const tasksWithStatus = STATE.tasks.filter(t => t.status === (data.status || 'todo'));
+    const order = tasksWithStatus.length;
+
+    const task = {
+        id:          createTaskId(),
+        title:       data.title.trim(),
+        description: (data.description || '').trim(),
+        category:    data.category  || '',
+        priority:    data.priority  || 'medium',
+        status:      data.status    || 'todo',
+        dueDate:     data.dueDate   || '',
+        completed:   false,
+        order:       order,
+        createdAt:   new Date().toISOString()
+    };
+    STATE.tasks.push(task);
+    lsSave();
+}
+
+function taskUpdate(id, data) {
+    const idx = STATE.tasks.findIndex(t => t.id === id);
+    if (idx === -1) return;
+    Object.assign(STATE.tasks[idx], data);
+    lsSave();
+}
+
+function taskDelete(id) {
+    const deletedTask = STATE.tasks.find(t => t.id === id);
+    STATE.tasks = STATE.tasks.filter(t => t.id !== id);
+
+    // Reorder remaining tasks in the same status
+    if (deletedTask) {
+        STATE.tasks
+            .filter(t => t.status === deletedTask.status)
+            .sort((a, b) => (a.order || 0) - (b.order || 0))
+            .forEach((task, idx) => {
+                task.order = idx;
+            });
+    }
+
+    lsSave();
+}
+
+function taskToggleComplete(id) {
+    const task = STATE.tasks.find(t => t.id === id);
+    if (!task) return;
+    task.completed = !task.completed;
+
+    if (task.completed) {
+        // Checking: move to Done column
+        task.status = 'done';
+    } else {
+        // Unchecking: if in Done, move to In Progress
+        if (task.status === 'done') {
+            task.status = 'inprogress';
+        }
+    }
+    lsSave();
+}
+
+function taskSetCompleted(id, completed) {
+    const task = STATE.tasks.find(t => t.id === id);
+    if (!task) return;
+    task.completed = completed;
+    lsSave();
+}
+
+// ─── GOAL CRUD ────────────────────────────────────────────────────────────────
+function createGoalId() {
+    return 'goal_' + Date.now() + '_' + Math.random().toString(36).slice(2, 9);
+}
+
+function getRandomColor() {
+    return GOAL_COLORS[Math.floor(Math.random() * GOAL_COLORS.length)];
+}
+
+function goalCreate(text) {
+    const goal = {
+        id: createGoalId(),
+        text: text.trim(),
+        order: STATE.goals.length,
+        color: getRandomColor()
+    };
+    STATE.goals.push(goal);
+    lsSave();
+}
+
+function goalDelete(id) {
+    STATE.goals = STATE.goals.filter(g => g.id !== id);
+    STATE.goals.forEach((g, idx) => { g.order = idx; });
+    lsSave();
+}
+
+function goalsReorder(newOrder) {
+    const goalMap = {};
+    STATE.goals.forEach(g => { goalMap[g.id] = g; });
+    STATE.goals = newOrder.map((id, idx) => {
+        const goal = goalMap[id];
+        if (goal) goal.order = idx;
+        return goal;
+    }).filter(Boolean);
+    lsSave();
+}
+
+// ─── CATEGORY/SUBJECT CRUD ────────────────────────────────────────────────────
+function categoryCreate(name) {
+    const trimmed = name.trim();
+    if (!trimmed || STATE.categories.includes(trimmed)) return false;
+    STATE.categories.push(trimmed);
+    lsSave();
+    return true;
+}
+
+function categoryRename(oldName, newName) {
+    const trimmed = newName.trim();
+    const oldIdx = STATE.categories.indexOf(oldName);
+    if (oldIdx === -1) return false;
+    if (trimmed === oldName) return true;
+    if (STATE.categories.includes(trimmed)) return false;
+
+    STATE.categories[oldIdx] = trimmed;
+    STATE.tasks.forEach(task => {
+        if (task.category === oldName) {
+            task.category = trimmed;
+        }
+    });
+    lsSave();
+    return true;
+}
+
+function categoryDelete(name) {
+    const idx = STATE.categories.indexOf(name);
+    if (idx === -1) return;
+    STATE.categories.splice(idx, 1);
+    STATE.tasks.forEach(task => {
+        if (task.category === name) {
+            task.category = '';
+        }
+    });
+    lsSave();
+}
+
+// ─── FILTERING ────────────────────────────────────────────────────────────────
+function getFilteredByStatus(status) {
+    const q = STATE.search.toLowerCase().trim();
+    return STATE.tasks.filter(task => {
+        if (task.status !== status) return false;
+        if (STATE.filter !== 'all' && task.category !== STATE.filter) return false;
+        if (q) {
+            const inTitle = task.title.toLowerCase().includes(q);
+            const inDesc  = task.description.toLowerCase().includes(q);
+            if (!inTitle && !inDesc) return false;
+        }
+        return true;
+    }).sort((a, b) => (a.order || 0) - (b.order || 0));  // Sort by order
+}
+
+// ─── HELPERS ─────────────────────────────────────────────────────────────────
+function esc(str) {
+    const d = document.createElement('div');
+    d.textContent = String(str || '');
+    return d.innerHTML;
+}
+
+function formatDate(dateStr) {
+    if (!dateStr) return '';
+    const [y, m, d] = dateStr.split('-').map(Number);
+    const date = new Date(y, m - 1, d);
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+function isOverdue(dateStr) {
+    if (!dateStr) return false;
+    const [y, m, d] = dateStr.split('-').map(Number);
+    const due  = new Date(y, m - 1, d);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return due < today;
+}
+
+// ─── RENDER ───────────────────────────────────────────────────────────────────
+function buildTaskCard(task) {
+    const overdue   = isOverdue(task.dueDate);
+    const dateCls   = overdue ? 'text-red-500 font-medium' : 'text-slate-400 dark:text-slate-500';
+    const titleCls  = task.completed
+        ? 'line-through text-slate-400 dark:text-slate-500'
+        : 'text-slate-800 dark:text-slate-100';
+    const checkCls  = task.completed
+        ? 'bg-emerald-500 border-emerald-500 text-white'
+        : 'border-slate-300 dark:border-slate-600 hover:border-emerald-400 dark:hover:border-emerald-500 text-transparent';
+    const priCls    =
+        task.priority === 'high'   ? 'bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400' :
+        task.priority === 'medium' ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400' :
+                                     'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400';
+
+    return `
+<div class="task-card pri-${esc(task.priority)} ${task.completed ? 'opacity-50' : ''} fade-up group"
+     data-task-id="${esc(task.id)}">
+
+    <div class="flex gap-2.5 items-start">
+        <button class="mt-0.5 flex-shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center
+                       text-xs font-bold transition-all duration-200 ${checkCls}"
+                onclick="handleToggleComplete('${esc(task.id)}')"
+                title="Toggle complete">✓</button>
+
+        <div class="flex-1 min-w-0">
+            <div class="text-sm font-medium leading-snug ${titleCls}">${esc(task.title)}</div>
+            ${task.description
+                ? `<div class="text-xs text-slate-400 dark:text-slate-500 mt-1 leading-relaxed line-clamp-2">${esc(task.description)}</div>`
+                : ''}
+            <div class="flex flex-wrap gap-1.5 mt-2 items-center">
+                ${task.category
+                    ? `<span class="px-2 py-0.5 rounded-full text-xs font-medium
+                                   bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400">
+                           ${esc(task.category)}
+                       </span>`
+                    : ''}
+                <span class="px-2 py-0.5 rounded-full text-xs font-semibold ${priCls}">${esc(task.priority)}</span>
+                ${task.dueDate
+                    ? `<span class="text-xs ${dateCls}">📅 ${formatDate(task.dueDate)}${overdue ? ' ⚠' : ''}</span>`
+                    : ''}
+            </div>
+        </div>
+
+        <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex-shrink-0">
+            <button class="p-1.5 text-blue-600 hover:bg-blue-100 dark:hover:bg-blue-900/40 rounded transition-colors"
+                    onclick="handleEditTask('${esc(task.id)}')"
+                    title="Edit">✎</button>
+            <button class="p-1.5 text-red-600 hover:bg-red-100 dark:hover:bg-red-900/40 rounded transition-colors"
+                    onclick="handleDeleteTask('${esc(task.id)}')"
+                    title="Delete">🗑</button>
+        </div>
+    </div>
+</div>`;
+}
+
+function buildEmptyState(label) {
+    return `
+<div class="flex flex-col items-center justify-center py-12 text-center select-none pointer-events-none">
+    <div class="text-3xl mb-2 opacity-40">📭</div>
+    <div class="text-sm text-slate-400 dark:text-slate-600">No ${label} tasks</div>
+    <div class="text-xs text-slate-300 dark:text-slate-700 mt-1">Drag tasks here or add a new one</div>
+</div>`;
+}
+
+function renderBoard() {
+    const configs = [
+        { listId: 'todoList',       status: 'todo',       label: 'to do' },
+        { listId: 'inprogressList', status: 'inprogress', label: 'in progress' },
+        { listId: 'doneList',       status: 'done',       label: 'done' }
+    ];
+
+    configs.forEach(({ listId, status, label }) => {
+        const el    = document.getElementById(listId);
+        const tasks = getFilteredByStatus(status);
+        el.innerHTML = tasks.length
+            ? tasks.map(buildTaskCard).join('')
+            : buildEmptyState(label);
+    });
+
+    initDragAndDrop();
+}
+
+function renderStats() {
+    const all   = STATE.tasks;
+    const total = all.length;
+    const done  = all.filter(t => t.completed).length;
+    const pct   = total === 0 ? 0 : Math.round((done / total) * 100);
+
+    document.getElementById('completedCount').textContent = done;
+    document.getElementById('totalCount').textContent     = total;
+    document.getElementById('progressFill').style.width   = pct + '%';
+    document.getElementById('progressPct').textContent    = pct + '%';
+
+    const tCount = all.filter(t => t.status === 'todo').length;
+    const iCount = all.filter(t => t.status === 'inprogress').length;
+    const dCount = all.filter(t => t.status === 'done').length;
+
+    document.getElementById('todoCount').textContent       = tCount;
+    document.getElementById('inprogressCount').textContent = iCount;
+    document.getElementById('doneCount').textContent       = dCount;
+    document.getElementById('todoBadge').textContent       = tCount;
+    document.getElementById('inprogressBadge').textContent = iCount;
+    document.getElementById('doneBadge').textContent       = dCount;
+}
+
+function renderCategoryFilter() {
+    const el = document.getElementById('categoryList');
+    const items = [
+        { value: 'all', label: '✦ All Tasks' },
+        ...STATE.categories.map(c => ({ value: c, label: c }))
+    ];
+
+    el.innerHTML = items.map(({ value, label }) => {
+        const active = STATE.filter === value;
+        const btnClass = active
+            ? 'bg-blue-500 text-white shadow-sm shadow-blue-500/20'
+            : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700/60';
+
+        return `<div class="flex items-center gap-1">
+            <button
+                class="flex-1 text-left px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 category-btn ${btnClass}"
+                data-filter="${esc(value)}"
+            >${esc(label)}</button>
+            ${value !== 'all' ? `<button class="px-2 py-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 text-sm"
+                    onclick="showCategoryMenu('${esc(value)}')"
+                    title="Manage">⋮</button>` : ''}
+        </div>`;
+    }).join('');
+
+    el.querySelectorAll('.category-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            STATE.filter = btn.dataset.filter;
+            renderCategoryFilter();
+            renderBoard();
+        });
+    });
+}
+
+function renderCategorySelect() {
+    const el = document.getElementById('taskCategory');
+    el.innerHTML = `<option value="">None</option>` +
+        STATE.categories.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
+}
+
+function renderGoals() {
+    const el = document.getElementById('goalsList');
+    if (STATE.goals.length === 0) {
+        el.innerHTML = '';
+        return;
+    }
+
+    el.innerHTML = STATE.goals
+        .sort((a, b) => a.order - b.order)
+        .map(goal => `
+<div class="goal-pill ${esc(goal.color)} fade-up group" data-goal-id="${esc(goal.id)}">
+    <span>${esc(goal.text)}</span>
+    <button type="button"
+            class="ml-1 opacity-0 group-hover:opacity-100 transition-opacity leading-none text-lg"
+            onclick="handleDeleteGoal('${esc(goal.id)}')"
+            title="Delete">×</button>
+</div>`)
+        .join('');
+
+    initGoalDragAndDrop();
+}
+
+function renderAppTitle() {
+    const textSpan = document.getElementById('appTitle').querySelector('span:first-child');
+    if (textSpan) textSpan.textContent = STATE.appTitle;
+}
+
+function renderAll() {
+    renderBoard();
+    renderStats();
+    renderCategoryFilter();
+    renderCategorySelect();
+    renderGoals();
+    renderAppTitle();
+}
+
+// ─── DRAG AND DROP ────────────────────────────────────────────────────────────
+function initDragAndDrop() {
+    STATE.sortables.forEach(s => { try { s.destroy(); } catch(e) {} });
+    STATE.sortables = [];
+
+    const listIds = ['todoList', 'inprogressList', 'doneList'];
+
+    listIds.forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+
+        const instance = Sortable.create(el, {
+            group:      'kanban',
+            animation:  150,
+            ghostClass: 'sortable-ghost',
+            chosenClass:'sortable-chosen',
+            filter:     '.pointer-events-none',
+            forceFallback: false,
+            delay: 100,
+            delayOnTouchOnly: true,
+            onEnd(evt) {
+                const taskId   = evt.item.dataset.taskId;
+                const newStatus = evt.to.dataset.status;
+
+                if (!taskId || !newStatus) return;
+
+                // Update task status
+                const task = STATE.tasks.find(t => t.id === taskId);
+                if (!task) return;
+
+                task.status = newStatus;
+
+                // Auto-update completed state based on status
+                if (newStatus === 'done') {
+                    task.completed = true;
+                } else {
+                    task.completed = false;
+                }
+
+                // Update order based on new DOM position
+                const container = evt.to;
+                const taskIds = Array.from(container.querySelectorAll('[data-task-id]'))
+                    .map(el => el.dataset.taskId);
+
+                taskIds.forEach((id, idx) => {
+                    const t = STATE.tasks.find(task => task.id === id);
+                    if (t) t.order = idx;
+                });
+
+                lsSave();
+
+                // Full re-render to update all UI
+                renderBoard();
+                renderStats();
+                renderCategoryFilter();
+            }
+        });
+
+        STATE.sortables.push(instance);
+    });
+}
+
+function initGoalDragAndDrop() {
+    const el = document.getElementById('goalsList');
+    if (!el) return;
+
+    if (STATE.goalSortable) {
+        try { STATE.goalSortable.destroy(); } catch(e) {}
+    }
+
+    STATE.goalSortable = Sortable.create(el, {
+        animation:  150,
+        ghostClass: 'sortable-ghost',
+        chosenClass: 'sortable-chosen',
+        forceFallback: false,
+        onEnd() {
+            const newOrder = Array.from(el.querySelectorAll('[data-goal-id]'))
+                .map(el => el.dataset.goalId);
+            goalsReorder(newOrder);
+        }
+    });
+}
+
+// ─── MODAL ───────────────────────────────────────────────────────────────────
+function modalShow(modalId) {
+    document.getElementById(modalId).style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+}
+
+function modalHide(modalId) {
+    document.getElementById(modalId).style.display = 'none';
+    document.body.style.overflow = '';
+    if (modalId === 'taskModal') STATE.editingId = null;
+}
+
+function openAddModal() {
+    STATE.editingId = null;
+    document.getElementById('modalTitle').textContent = 'New Task';
+    document.getElementById('taskForm').reset();
+    document.getElementById('titleError').classList.add('hidden');
+    document.getElementById('deleteTaskBtn').classList.add('hidden');
+    renderCategorySelect();
+    modalShow('taskModal');
+    setTimeout(() => document.getElementById('taskTitle').focus(), 50);
+}
+
+function handleEditTask(id) {
+    const task = STATE.tasks.find(t => t.id === id);
+    if (!task) return;
+
+    STATE.editingId = id;
+    document.getElementById('modalTitle').textContent = 'Edit Task';
+    renderCategorySelect();
+
+    document.getElementById('taskTitle').value       = task.title;
+    document.getElementById('taskDescription').value = task.description;
+    document.getElementById('taskCategory').value    = task.category;
+    document.getElementById('taskPriority').value    = task.priority;
+    document.getElementById('taskStatus').value      = task.status;
+    document.getElementById('taskDueDate').value     = task.dueDate;
+    document.getElementById('titleError').classList.add('hidden');
+    document.getElementById('deleteTaskBtn').classList.remove('hidden');
+
+    modalShow('taskModal');
+    setTimeout(() => document.getElementById('taskTitle').focus(), 50);
+}
+
+function handleDeleteTask(id) {
+    taskDelete(id);
+    renderAll();
+}
+
+function handleToggleComplete(id) {
+    taskToggleComplete(id);
+    renderAll();
+}
+
+function handleDeleteGoal(id) {
+    goalDelete(id);
+    renderGoals();
+}
+
+function showCategoryMenu(categoryName) {
+    const el = document.getElementById('categoryModalContent');
+    el.innerHTML = `
+        <div class="space-y-3">
+            <input type="text" id="renameInput" value="${esc(categoryName)}" class="input-field" placeholder="New name">
+            <div class="flex gap-2">
+                <button onclick="confirmRenameCategory('${esc(categoryName)}')" class="btn-primary flex-1 text-sm py-2">Rename</button>
+                <button onclick="confirmDeleteCategory('${esc(categoryName)}')" class="flex-1 bg-red-500/10 text-red-600 hover:bg-red-500/20 rounded-lg py-2 text-sm font-medium transition-colors">Delete</button>
+            </div>
+        </div>
+    `;
+    modalShow('categoryModal');
+    setTimeout(() => document.getElementById('renameInput').focus(), 50);
+}
+
+function confirmRenameCategory(oldName) {
+    const newName = document.getElementById('renameInput').value.trim();
+    if (!newName) {
+        alert('Please enter a name');
+        return;
+    }
+    if (categoryRename(oldName, newName)) {
+        modalHide('categoryModal');
+        renderAll();
+    } else {
+        alert('Subject already exists or is invalid');
+    }
+}
+
+function confirmDeleteCategory(name) {
+    if (confirm(`Delete "${name}"? Tasks with this subject will lose their subject assignment.`)) {
+        categoryDelete(name);
+        modalHide('categoryModal');
+        renderAll();
+    }
+}
+
+// ─── FORM SUBMISSION ─────────────────────────────────────────────────────────
+function handleFormSubmit(e) {
+    e.preventDefault();
+
+    const title = document.getElementById('taskTitle').value.trim();
+
+    if (!title) {
+        document.getElementById('titleError').classList.remove('hidden');
+        document.getElementById('taskTitle').focus();
+        return;
+    }
+
+    document.getElementById('titleError').classList.add('hidden');
+
+    const data = {
+        title,
+        description: document.getElementById('taskDescription').value,
+        category:    document.getElementById('taskCategory').value,
+        priority:    document.getElementById('taskPriority').value,
+        status:      document.getElementById('taskStatus').value,
+        dueDate:     document.getElementById('taskDueDate').value
+    };
+
+    if (STATE.editingId) {
+        taskUpdate(STATE.editingId, data);
+    } else {
+        taskCreate(data);
+    }
+
+    modalHide('taskModal');
+    renderAll();
+}
+
+// ─── DARK MODE ───────────────────────────────────────────────────────────────
+function applyDarkMode() {
+    const html = document.documentElement;
+    if (STATE.darkMode) {
+        html.classList.add('dark');
+        document.getElementById('toggleDarkMode').textContent = '☀️';
+    } else {
+        html.classList.remove('dark');
+        document.getElementById('toggleDarkMode').textContent = '🌙';
+    }
+}
+
+// ─── APP TITLE EDITING ────────────────────────────────────────────────────────
+function enableTitleEdit() {
+    const title = document.getElementById('appTitle');
+    const textSpan = title.querySelector('span:first-child');
+    const currentText = textSpan.textContent;
+
+    textSpan.contentEditable = true;
+    textSpan.style.cursor = 'text';
+    textSpan.focus();
+
+    // Select all text
+    const range = document.createRange();
+    range.selectNodeContents(textSpan);
+    window.getSelection().removeAllRanges();
+    window.getSelection().addRange(range);
+
+    function saveTitleEdit() {
+        const newText = textSpan.textContent.trim();
+        textSpan.contentEditable = false;
+        textSpan.style.cursor = 'auto';
+
+        if (newText && newText !== currentText) {
+            STATE.appTitle = newText;
+            lsSave();
+        }
+        renderAppTitle();
+
+        textSpan.removeEventListener('blur', saveTitleEdit);
+        textSpan.removeEventListener('keydown', handleTitleKeydown);
+    }
+
+    function handleTitleKeydown(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            saveTitleEdit();
+        } else if (e.key === 'Escape') {
+            textSpan.textContent = currentText;
+            saveTitleEdit();
+        }
+    }
+
+    textSpan.addEventListener('blur', saveTitleEdit);
+    textSpan.addEventListener('keydown', handleTitleKeydown);
+}
+
+// ─── EVENT WIRING ────────────────────────────────────────────────────────────
+function wireEvents() {
+
+    // Task Modal
+    document.getElementById('openAddTaskModal').addEventListener('click', openAddModal);
+    document.getElementById('closeModal').addEventListener('click', () => modalHide('taskModal'));
+    document.getElementById('taskModal').addEventListener('click', function(e) {
+        if (e.target === this) modalHide('taskModal');
+    });
+    document.getElementById('taskForm').addEventListener('submit', handleFormSubmit);
+    document.getElementById('deleteTaskBtn').addEventListener('click', function() {
+        if (STATE.editingId) {
+            taskDelete(STATE.editingId);
+            modalHide('taskModal');
+            renderAll();
+        }
+    });
+
+    // Category Modal
+    document.getElementById('closeCategoryModal').addEventListener('click', () => modalHide('categoryModal'));
+    document.getElementById('categoryModal').addEventListener('click', function(e) {
+        if (e.target === this) modalHide('categoryModal');
+    });
+
+    // Dark mode
+    document.getElementById('toggleDarkMode').addEventListener('click', function() {
+        STATE.darkMode = !STATE.darkMode;
+        applyDarkMode();
+        lsSave();
+    });
+
+    // Title editing
+    document.getElementById('appTitle').addEventListener('click', enableTitleEdit);
+
+    // Search
+    document.getElementById('searchInput').addEventListener('input', function(e) {
+        STATE.search = e.target.value;
+        renderBoard();
+    });
+
+    // Add Category
+    document.getElementById('addCategoryBtn').addEventListener('click', function() {
+        const input = document.getElementById('newCategoryInput');
+        const val   = input.value.trim();
+        if (val && categoryCreate(val)) {
+            input.value = '';
+            renderAll();
+        }
+    });
+
+    document.getElementById('newCategoryInput').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            document.getElementById('addCategoryBtn').click();
+        }
+    });
+
+    // Add Goal Form
+    document.getElementById('toggleAddGoalBtn').addEventListener('click', function() {
+        const form = document.getElementById('addGoalForm');
+        form.style.display = 'flex';
+        document.getElementById('newGoalInput').focus();
+    });
+
+    document.getElementById('saveGoalBtn').addEventListener('click', function() {
+        const input = document.getElementById('newGoalInput');
+        const val = input.value.trim();
+        if (val) {
+            goalCreate(val);
+            input.value = '';
+            renderGoals();
+            document.getElementById('addGoalForm').style.display = 'none';
+        }
+    });
+
+    document.getElementById('cancelGoalBtn').addEventListener('click', function() {
+        document.getElementById('newGoalInput').value = '';
+        document.getElementById('addGoalForm').style.display = 'none';
+    });
+
+    document.getElementById('newGoalInput').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            document.getElementById('saveGoalBtn').click();
+        } else if (e.key === 'Escape') {
+            document.getElementById('cancelGoalBtn').click();
+        }
+    });
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', function(e) {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+            e.preventDefault();
+            openAddModal();
+        }
+        if (e.key === 'Escape') {
+            if (document.getElementById('taskModal').style.display === 'flex') {
+                modalHide('taskModal');
+            } else if (document.getElementById('categoryModal').style.display === 'flex') {
+                modalHide('categoryModal');
+            }
+        }
+    });
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+function init() {
+    lsLoad();
+    applyDarkMode();
+    wireEvents();
+    renderAll();
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+} else {
+    init();
+}
+</script>
+
+</body>
+</html>
