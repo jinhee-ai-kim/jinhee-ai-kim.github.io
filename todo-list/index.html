@@ -166,8 +166,12 @@
         }
 
         /* Goals section hover */
+        #toggleAddGoalBtn {
+            @apply w-0 overflow-hidden transition-all duration-200;
+        }
+
         #goalsSection:hover #toggleAddGoalBtn {
-            @apply opacity-100 pointer-events-auto;
+            @apply opacity-100 pointer-events-auto w-auto;
         }
 
         /* Edit icon on title hover */
@@ -233,11 +237,16 @@
 ════════════════════════════════════════════════════════════ -->
 <div class="max-w-7xl mx-auto px-5 pb-4">
     <div class="flex items-center justify-between gap-4">
-        <h1 id="appTitle" class="text-xl font-bold bg-gradient-to-r from-blue-400 via-indigo-400 to-violet-400 bg-clip-text text-transparent title-editable flex items-center gap-2">
-            <span>Study Assistant</span>
-            <span class="edit-icon opacity-0 transition-opacity duration-200 text-slate-400 dark:text-slate-500 text-sm no-gradient hover:opacity-100">✎</span>
-        </h1>
+        <div class="flex items-center gap-3">
+            <h1 id="appTitle" class="text-xl font-bold bg-gradient-to-r from-blue-400 via-indigo-400 to-violet-400 bg-clip-text text-transparent title-editable flex items-center gap-2">
+                <span>Study Assistant</span>
+                <span class="edit-icon opacity-0 transition-opacity duration-200 text-slate-400 dark:text-slate-500 text-sm no-gradient hover:opacity-100">✎</span>
+            </h1>
 
+            <div id="currentActivityDisplay" class="text-sm font-semibold bg-gradient-to-r from-blue-400 via-indigo-400 to-violet-400 bg-clip-text text-transparent whitespace-nowrap">
+                <!-- "Now is the time to do..." will be inserted here -->
+            </div>
+        </div>
         <div class="flex items-center gap-4">
             <div class="flex items-center gap-2 text-sm">
                 <span class="text-slate-400 dark:text-slate-500">
@@ -251,8 +260,20 @@
                 <span class="text-xs text-slate-400 dark:text-slate-600 w-10" id="progressPct">0%</span>
             </div>
 
+            <button id="openScheduleBtn"
+                    class="btn-ghost p-1.5 text-lg w-5 h-8 flex items-center justify-center"
+                    title="24H Schedule">
+                ⏰
+            </button>
+
+            <button id="openCalendarBtn"
+                    class="btn-ghost p-1.5 text-lg w-5 h-8 flex items-center justify-center"
+                    title="Calendar view">
+                📅
+            </button>
+
             <button id="toggleDarkMode"
-                    class="btn-ghost p-1.5 text-lg w-8 h-8 flex items-center justify-center">
+                    class="btn-ghost p-1.5 text-lg w-5 h-8 flex items-center justify-center">
                 ☀️
             </button>
         </div>
@@ -279,20 +300,34 @@
         </button>
 
         <div class="card p-4">
-            <h3 class="text-xs font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-3">
-                Subjects
-            </h3>
+            <div class="flex items-center justify-between gap-2 mb-3">
+                <h3 class="text-xs font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">
+                    Subjects
+                </h3>
+                <button id="toggleCategoryFormBtn"
+                        class="py-2 px-2.5 text-base font-semibold
+                               text-slate-600 dark:text-slate-300
+                               bg-white/10 dark:bg-slate-600/20
+                               hover:bg-white/20 dark:hover:bg-slate-600/40
+                               border border-white/20 dark:border-slate-500/30
+                               rounded-xl backdrop-blur-sm transition-all duration-200 flex-shrink-0"
+                        onclick="toggleCategoryForm()">
+                    +
+                </button>
+            </div>
             <div class="space-y-0.5" id="categoryList"></div>
-            <div class="mt-3 pt-3 border-t border-slate-200 dark:border-slate-700/50 space-y-2">
+            <div id="addCategoryForm" class="mt-3 pt-3 border-t border-slate-200 dark:border-slate-700/50 flex gap-2" style="display: none;">
                 <input type="text" id="newCategoryInput"
                        placeholder="New subject…"
-                       class="input-field text-xs py-1.5">
+                       class="input-field text-xs py-1.5 flex-1">
                 <button id="addCategoryBtn"
-                        class="w-full py-1.5 text-xs font-medium text-slate-500 dark:text-slate-400
-                               hover:text-blue-500 dark:hover:text-blue-400
-                               hover:bg-slate-100 dark:hover:bg-slate-700/60
-                               rounded-lg transition-all duration-200">
-                    + Add Subject
+                        class="py-2 px-2.5 text-base font-semibold
+                                text-slate-600 dark:text-slate-300
+                                bg-white/10 dark:bg-slate-600/20
+                                hover:bg-white/20 dark:hover:bg-slate-600/40
+                                border border-white/20 dark:border-slate-500/30
+                                rounded-xl backdrop-blur-sm transition-all duration-200">
+                    +
                 </button>
             </div>
         </div>
@@ -319,6 +354,31 @@
                         <span class="w-2 h-2 rounded-full bg-emerald-500 inline-block"></span>Done
                     </span>
                     <span class="text-sm font-bold text-emerald-500" id="doneCount">0</span>
+                </div>
+            </div>
+
+            <!-- Data Export/Import -->
+            <div class="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700/50">
+                <p class="text-xs text-slate-400 dark:text-slate-500 font-semibold mb-2">Data Management</p>
+                <div class="space-y-2">
+                    <button id="exportDataBtn"
+                            class="w-full px-3 py-1.5 rounded-lg text-xs font-medium
+                                   bg-slate-100 dark:bg-slate-700/40 text-slate-600 dark:text-slate-300
+                                   hover:bg-slate-200 dark:hover:bg-slate-700/60 transition-all duration-200">
+                        ⬇️ Export Data
+                    </button>
+                    <div class="relative">
+                        <input type="file"
+                               id="importDataInput"
+                               accept=".json"
+                               style="display:none">
+                        <button id="importDataBtn"
+                                class="w-full px-3 py-1.5 rounded-lg text-xs font-medium
+                                       bg-slate-100 dark:bg-slate-700/40 text-slate-600 dark:text-slate-300
+                                       hover:bg-slate-200 dark:hover:bg-slate-700/60 transition-all duration-200">
+                            ⬆️ Import Data
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -499,6 +559,207 @@
 </div>
 
 <!-- ═══════════════════════════════════════════════════════════
+     CALENDAR MODAL
+════════════════════════════════════════════════════════════ -->
+<div id="calendarModal"
+     style="display:none"
+     class="fixed inset-0 z-50 flex items-center justify-center p-4
+            bg-black/50 dark:bg-black/70 backdrop-blur-sm">
+    <div class="card w-full max-w-lg p-6 modal-pop">
+
+        <div class="flex justify-between items-center mb-5">
+            <div class="flex items-center gap-3">
+                <button id="prevMonth" class="btn-ghost p-1 text-lg">←</button>
+                <h2 class="text-lg font-bold w-32 text-center" id="calendarTitle">March 2026</h2>
+                <button id="nextMonth" class="btn-ghost p-1 text-lg">→</button>
+            </div>
+            <button id="closeCalendarModal"
+                    class="btn-ghost w-8 h-8 flex items-center justify-center text-xl font-light leading-none">
+                ×
+            </button>
+        </div>
+
+        <div class="space-y-4">
+            <!-- Weekday headers -->
+            <div class="grid grid-cols-7 gap-1 mb-2">
+                <div class="text-center text-xs font-bold text-slate-400 dark:text-slate-500">Sun</div>
+                <div class="text-center text-xs font-bold text-slate-400 dark:text-slate-500">Mon</div>
+                <div class="text-center text-xs font-bold text-slate-400 dark:text-slate-500">Tue</div>
+                <div class="text-center text-xs font-bold text-slate-400 dark:text-slate-500">Wed</div>
+                <div class="text-center text-xs font-bold text-slate-400 dark:text-slate-500">Thu</div>
+                <div class="text-center text-xs font-bold text-slate-400 dark:text-slate-500">Fri</div>
+                <div class="text-center text-xs font-bold text-slate-400 dark:text-slate-500">Sat</div>
+            </div>
+
+            <!-- Calendar grid -->
+            <div class="grid grid-cols-7 gap-1" id="calendarGrid">
+            </div>
+
+            <!-- Selected date tasks -->
+            <div id="selectedDateTasks" class="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
+                <p class="text-xs text-slate-400 dark:text-slate-500" id="selectedDateText">Select a date</p>
+                <div id="selectedTasksList" class="mt-3 space-y-2">
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     24H SCHEDULE MODAL (CIRCULAR WHEEL)
+════════════════════════════════════════════════════════════ -->
+<div id="scheduleModal"
+     style="display:none"
+     class="fixed inset-0 z-50 flex items-center justify-center p-4
+            bg-black/50 dark:bg-black/70 backdrop-blur-sm">
+    <div class="card w-full max-w-4xl p-6 modal-pop max-h-[90vh] overflow-y-auto">
+
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-lg font-bold">My 24H Schedule</h2>
+            <button id="closeScheduleModal"
+                    class="btn-ghost w-8 h-8 flex items-center justify-center text-xl font-light leading-none">
+                ×
+            </button>
+        </div>
+
+        <div class="flex gap-8 flex-col lg:flex-row">
+            <!-- Left: Circular Wheel -->
+            <div class="flex-1 flex flex-col items-center gap-4">
+                <svg id="scheduleWheel" viewBox="0 0 400 400" class="w-full h-auto dark:text-slate-100" style="max-width: 500px;"></svg>
+            </div>
+
+            <!-- Right: Form & Events List -->
+            <div class="w-full lg:w-80">
+                <!-- Add/Edit Form -->
+                <div id="schedFormArea" class="mb-6 p-4 rounded-lg bg-slate-50 dark:bg-slate-700/30">
+                    <p class="text-xs font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-3">Add Event</p>
+
+                    <div class="space-y-3">
+                        <input type="text" id="schedName"
+                               placeholder="Activity name (e.g. Study Math)"
+                               class="input-field"
+                               autocomplete="off">
+
+                        <div class="flex gap-2">
+                            <div class="flex-1">
+                                <label class="text-xs text-slate-500 dark:text-slate-400">Start</label>
+                                <div class="flex gap-1 mt-1">
+                                    <select id="schedStartHour" class="input-field flex-1 py-2">
+                                        <option value="00">00</option>
+                                        <option value="01">01</option>
+                                        <option value="02">02</option>
+                                        <option value="03">03</option>
+                                        <option value="04">04</option>
+                                        <option value="05">05</option>
+                                        <option value="06">06</option>
+                                        <option value="07">07</option>
+                                        <option value="08">08</option>
+                                        <option value="09" selected>09</option>
+                                        <option value="10">10</option>
+                                        <option value="11">11</option>
+                                        <option value="12">12</option>
+                                        <option value="13">13</option>
+                                        <option value="14">14</option>
+                                        <option value="15">15</option>
+                                        <option value="16">16</option>
+                                        <option value="17">17</option>
+                                        <option value="18">18</option>
+                                        <option value="19">19</option>
+                                        <option value="20">20</option>
+                                        <option value="21">21</option>
+                                        <option value="22">22</option>
+                                        <option value="23">23</option>
+                                    </select>
+                                    <select id="schedStartMin" class="input-field flex-1 py-2">
+                                        <option value="00" selected>00</option>
+                                        <option value="10">10</option>
+                                        <option value="20">20</option>
+                                        <option value="30">30</option>
+                                        <option value="40">40</option>
+                                        <option value="50">50</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="flex-1">
+                                <label class="text-xs text-slate-500 dark:text-slate-400">End</label>
+                                <div class="flex gap-1 mt-1">
+                                    <select id="schedEndHour" class="input-field flex-1 py-2">
+                                        <option value="00">00</option>
+                                        <option value="01">01</option>
+                                        <option value="02">02</option>
+                                        <option value="03">03</option>
+                                        <option value="04">04</option>
+                                        <option value="05">05</option>
+                                        <option value="06">06</option>
+                                        <option value="07">07</option>
+                                        <option value="08">08</option>
+                                        <option value="09">09</option>
+                                        <option value="10" selected>10</option>
+                                        <option value="11">11</option>
+                                        <option value="12">12</option>
+                                        <option value="13">13</option>
+                                        <option value="14">14</option>
+                                        <option value="15">15</option>
+                                        <option value="16">16</option>
+                                        <option value="17">17</option>
+                                        <option value="18">18</option>
+                                        <option value="19">19</option>
+                                        <option value="20">20</option>
+                                        <option value="21">21</option>
+                                        <option value="22">22</option>
+                                        <option value="23">23</option>
+                                    </select>
+                                    <select id="schedEndMin" class="input-field flex-1 py-2">
+                                        <option value="00">00</option>
+                                        <option value="10">10</option>
+                                        <option value="20">20</option>
+                                        <option value="30">30</option>
+                                        <option value="40">40</option>
+                                        <option value="50" selected>50</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-1">
+                            <label class="text-xs text-slate-500 dark:text-slate-400">Color</label>
+                            <div id="colorPicker" class="flex gap-2 flex-wrap mt-1">
+                            </div>
+                            <input type="hidden" data-color-input value="">
+                        </div>
+
+                        <p id="schedError" class="text-xs text-red-500 font-medium"></p>
+
+                        <div class="flex gap-2 pt-2">
+                            <button id="schedSubmit"
+                                    class="btn-primary flex-1 px-3 py-2 text-sm">
+                                Add Event
+                            </button>
+                            <button id="schedCancel"
+                                    style="display:none"
+                                    class="px-3 py-2 rounded-lg text-sm font-medium
+                                           bg-slate-200 dark:bg-slate-700/60 text-slate-700 dark:text-slate-300
+                                           hover:bg-slate-300 dark:hover:bg-slate-700 transition-all duration-200">
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Events List -->
+                <div>
+                    <p class="text-xs font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-3">Scheduled Events</p>
+                    <div id="schedEventList" class="space-y-2 max-h-80 overflow-y-auto">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
      JAVASCRIPT
 ════════════════════════════════════════════════════════════ -->
 <script>
@@ -516,6 +777,7 @@ const STATE = {
     tasks:      [],
     categories: [],
     goals:      [],
+    schedule:   [],
     appTitle:   "[Your Name]'s TODO-LIST",
     darkMode:   false,
     filter:     'all',
@@ -530,6 +792,7 @@ const LS_KEYS = {
     tasks:      'sa_tasks',
     categories: 'sa_categories',
     goals:      'sa_goals',
+    schedule:   'sa_schedule',
     appTitle:   'sa_appTitle',
     darkMode:   'sa_darkMode'
 };
@@ -539,11 +802,24 @@ function lsLoad() {
         const t = localStorage.getItem(LS_KEYS.tasks);
         const c = localStorage.getItem(LS_KEYS.categories);
         const g = localStorage.getItem(LS_KEYS.goals);
+        const s = localStorage.getItem(LS_KEYS.schedule);
         const a = localStorage.getItem(LS_KEYS.appTitle);
         const d = localStorage.getItem(LS_KEYS.darkMode);
 
         STATE.tasks      = t ? JSON.parse(t) : [];
-        STATE.categories = c ? JSON.parse(c) : ['Math', 'AI', 'Languages'];
+
+        // Migration: schedule format change from Array(24) to event objects
+        const raw = s ? JSON.parse(s) : [];
+        STATE.schedule = (Array.isArray(raw) && raw.length > 0 && typeof raw[0] === 'string')
+            ? []
+            : raw;
+
+        // Migration: convert string array to object array with order
+        let categories = c ? JSON.parse(c) : ['Math', 'AI', 'Languages'];
+        if (Array.isArray(categories) && categories.length > 0 && typeof categories[0] === 'string') {
+            categories = categories.map((name, idx) => ({ name, order: idx }));
+        }
+        STATE.categories = categories;
         STATE.goals      = g ? JSON.parse(g) : [
             {
                 id: 'goal_default_read10books',
@@ -564,7 +840,11 @@ function lsLoad() {
     } catch (err) {
         console.warn('Failed to load from localStorage:', err);
         STATE.tasks      = [];
-        STATE.categories = ['Math', 'AI', 'Languages'];
+        STATE.categories = [
+            { name: 'Math', order: 0 },
+            { name: 'AI', order: 1 },
+            { name: 'Languages', order: 2 }
+        ];
         STATE.goals      = [
             {
                 id: 'goal_default_read10books',
@@ -583,6 +863,7 @@ function lsSave() {
         localStorage.setItem(LS_KEYS.tasks,      JSON.stringify(STATE.tasks));
         localStorage.setItem(LS_KEYS.categories, JSON.stringify(STATE.categories));
         localStorage.setItem(LS_KEYS.goals,      JSON.stringify(STATE.goals));
+        localStorage.setItem(LS_KEYS.schedule,   JSON.stringify(STATE.schedule));
         localStorage.setItem(LS_KEYS.appTitle,   STATE.appTitle);
         localStorage.setItem(LS_KEYS.darkMode,   String(STATE.darkMode));
     } catch (err) {
@@ -711,20 +992,21 @@ function goalsReorder(newOrder) {
 // ─── CATEGORY/SUBJECT CRUD ────────────────────────────────────────────────────
 function categoryCreate(name) {
     const trimmed = name.trim();
-    if (!trimmed || STATE.categories.includes(trimmed)) return false;
-    STATE.categories.push(trimmed);
+    if (!trimmed || STATE.categories.some(c => c.name === trimmed)) return false;
+    const maxOrder = STATE.categories.length > 0 ? Math.max(...STATE.categories.map(c => c.order ?? 0)) : -1;
+    STATE.categories.push({ name: trimmed, order: maxOrder + 1 });
     lsSave();
     return true;
 }
 
 function categoryRename(oldName, newName) {
     const trimmed = newName.trim();
-    const oldIdx = STATE.categories.indexOf(oldName);
+    const oldIdx = STATE.categories.findIndex(c => c.name === oldName);
     if (oldIdx === -1) return false;
     if (trimmed === oldName) return true;
-    if (STATE.categories.includes(trimmed)) return false;
+    if (STATE.categories.some(c => c.name === trimmed)) return false;
 
-    STATE.categories[oldIdx] = trimmed;
+    STATE.categories[oldIdx].name = trimmed;
     STATE.tasks.forEach(task => {
         if (task.category === oldName) {
             task.category = trimmed;
@@ -735,7 +1017,7 @@ function categoryRename(oldName, newName) {
 }
 
 function categoryDelete(name) {
-    const idx = STATE.categories.indexOf(name);
+    const idx = STATE.categories.findIndex(c => c.name === name);
     if (idx === -1) return;
     STATE.categories.splice(idx, 1);
     STATE.tasks.forEach(task => {
@@ -784,10 +1066,39 @@ function isOverdue(dateStr) {
     return due < today;
 }
 
+function getDayCount(dateStr) {
+    if (!dateStr) return '';
+    const [y, m, d] = dateStr.split('-').map(Number);
+    const due  = new Date(y, m - 1, d);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const diffMs = due - today;
+    const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+
+    if (diffDays === 0) return '(D-day)';
+    if (diffDays > 0) return `(D-${diffDays})`;
+    return `(D+${Math.abs(diffDays)})`;
+}
+
 // ─── RENDER ───────────────────────────────────────────────────────────────────
 function buildTaskCard(task) {
+    // Calculate days remaining for color coding
+    let dateCls = 'text-slate-400 dark:text-slate-500';
+    if (task.dueDate) {
+        const [y, m, d] = task.dueDate.split('-').map(Number);
+        const due = new Date(y, m - 1, d);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const diffMs = due - today;
+        const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+
+        if (diffDays <= 3) {
+            dateCls = 'text-red-500 font-medium';
+        } else if (diffDays <= 7) {
+            dateCls = 'text-orange-500 font-medium';
+        }
+    }
     const overdue   = isOverdue(task.dueDate);
-    const dateCls   = overdue ? 'text-red-500 font-medium' : 'text-slate-400 dark:text-slate-500';
     const titleCls  = task.completed
         ? 'line-through text-slate-400 dark:text-slate-500'
         : 'text-slate-800 dark:text-slate-100';
@@ -823,7 +1134,7 @@ function buildTaskCard(task) {
                     : ''}
                 <span class="px-2 py-0.5 rounded-full text-xs font-semibold ${priCls}">${esc(task.priority)}</span>
                 ${task.dueDate
-                    ? `<span class="text-xs ${dateCls}">📅 ${formatDate(task.dueDate)}${overdue ? ' ⚠' : ''}</span>`
+                    ? `<span class="text-xs ${dateCls}">📅 ${formatDate(task.dueDate)} ${getDayCount(task.dueDate)}${overdue ? ' ⚠' : ''}</span>`
                     : ''}
             </div>
         </div>
@@ -892,18 +1203,19 @@ function renderStats() {
 
 function renderCategoryFilter() {
     const el = document.getElementById('categoryList');
+    const sorted = [...STATE.categories].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
     const items = [
         { value: 'all', label: '✦ All Tasks' },
-        ...STATE.categories.map(c => ({ value: c, label: c }))
+        ...sorted.map(c => ({ value: c.name, label: c.name, catObj: c }))
     ];
 
-    el.innerHTML = items.map(({ value, label }) => {
+    el.innerHTML = items.map(({ value, label, catObj }, idx) => {
         const active = STATE.filter === value;
         const btnClass = active
             ? 'bg-blue-500 text-white shadow-sm shadow-blue-500/20'
             : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700/60';
 
-        return `<div class="flex items-center gap-1">
+        return `<div class="flex items-center gap-1 category-item" ${catObj ? `data-category="${esc(label)}"` : ''}>
             <button
                 class="flex-1 text-left px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 category-btn ${btnClass}"
                 data-filter="${esc(value)}"
@@ -921,12 +1233,29 @@ function renderCategoryFilter() {
             renderBoard();
         });
     });
+
+    // Initialize drag and drop for categories (exclude "All Tasks")
+    if (STATE.sortables.categoryList) STATE.sortables.categoryList.destroy();
+    STATE.sortables.categoryList = new Sortable(el, {
+        draggable: '.category-item[data-category]',
+        animation: 150,
+        onEnd: function() {
+            const items = el.querySelectorAll('.category-item[data-category]');
+            Array.from(items).forEach((el, idx) => {
+                const name = el.dataset.category;
+                const cat = STATE.categories.find(c => c.name === name);
+                if (cat) cat.order = idx;
+            });
+            lsSave();
+        }
+    });
 }
 
 function renderCategorySelect() {
     const el = document.getElementById('taskCategory');
+    const sorted = [...STATE.categories].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
     el.innerHTML = `<option value="">None</option>` +
-        STATE.categories.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
+        sorted.map(c => `<option value="${esc(c.name)}">${esc(c.name)}</option>`).join('');
 }
 
 function renderGoals() {
@@ -1251,6 +1580,24 @@ function enableTitleEdit() {
 }
 
 // ─── EVENT WIRING ────────────────────────────────────────────────────────────
+// Toggle category form visibility
+function toggleCategoryForm() {
+    const form = document.getElementById('addCategoryForm');
+    const input = document.getElementById('newCategoryInput');
+    const toggleBtn = document.getElementById('toggleCategoryFormBtn');
+    if (form.style.display === 'none') {
+        form.style.display = 'flex';
+        input.focus();
+        input.value = '';
+        toggleBtn.textContent = '✕';
+        toggleBtn.style.fontSize = '0.875rem';
+    } else {
+        form.style.display = 'none';
+        toggleBtn.textContent = '+';
+        toggleBtn.style.fontSize = '1rem';
+    }
+}
+
 function wireEvents() {
 
     // Task Modal
@@ -1272,6 +1619,212 @@ function wireEvents() {
     document.getElementById('closeCategoryModal').addEventListener('click', () => modalHide('categoryModal'));
     document.getElementById('categoryModal').addEventListener('click', function(e) {
         if (e.target === this) modalHide('categoryModal');
+    });
+
+    // Calendar variables and functions
+    let calendarMonth = new Date().getMonth();
+    let calendarYear = new Date().getFullYear();
+    let calendarSelectedDate = null;
+
+    function getTasksByDate(dateStr) {
+        return STATE.tasks.filter(t => t.dueDate === dateStr);
+    }
+
+    function renderCalendar() {
+        const firstDay = new Date(calendarYear, calendarMonth, 1).getDay();
+        const daysInMonth = new Date(calendarYear, calendarMonth + 1, 0).getDate();
+        const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+                            'July', 'August', 'September', 'October', 'November', 'December'];
+
+        document.getElementById('calendarTitle').textContent = `${monthNames[calendarMonth]} ${calendarYear}`;
+
+        const grid = document.getElementById('calendarGrid');
+        grid.innerHTML = '';
+
+        // Empty cells for days before month starts
+        for (let i = 0; i < firstDay; i++) {
+            const emptyDiv = document.createElement('div');
+            grid.appendChild(emptyDiv);
+        }
+
+        // Days of the month
+        for (let day = 1; day <= daysInMonth; day++) {
+            const dateStr = `${calendarYear}-${String(calendarMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+            const tasksOnDate = getTasksByDate(dateStr);
+            const taskCount = tasksOnDate.length;
+
+            const dayDiv = document.createElement('div');
+            dayDiv.className = 'p-2 rounded-lg text-center cursor-pointer text-xs font-medium transition-all duration-200';
+            dayDiv.className += ' bg-slate-100 dark:bg-slate-700/40 hover:bg-blue-100 dark:hover:bg-blue-900/30';
+
+            if (taskCount > 0) {
+                dayDiv.className += ' border-2 border-blue-400 dark:border-blue-500';
+            } else {
+                dayDiv.className += ' border border-slate-200 dark:border-slate-600';
+            }
+
+            const today = new Date();
+            if (day === today.getDate() && calendarMonth === today.getMonth() && calendarYear === today.getFullYear()) {
+                dayDiv.className += ' ring-2 ring-emerald-400 dark:ring-emerald-500';
+            }
+
+            dayDiv.innerHTML = `<div>${day}</div>` + (taskCount > 0 ? `<div class="text-xs text-blue-600 dark:text-blue-400 font-bold">${taskCount}📌</div>` : '');
+            dayDiv.addEventListener('click', () => {
+                calendarSelectedDate = dateStr;
+                showSelectedDateTasks();
+            });
+            grid.appendChild(dayDiv);
+        }
+    }
+
+    function showSelectedDateTasks() {
+        if (!calendarSelectedDate) {
+            document.getElementById('selectedDateText').textContent = 'Select a date';
+            document.getElementById('selectedTasksList').innerHTML = '';
+            return;
+        }
+
+        const tasks = getTasksByDate(calendarSelectedDate);
+        const [y, m, d] = calendarSelectedDate.split('-').map(Number);
+        const dateObj = new Date(y, m - 1, d);
+        const dateStr = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+        document.getElementById('selectedDateText').textContent = `Tasks for ${dateStr} (${tasks.length})`;
+
+        const tasksList = document.getElementById('selectedTasksList');
+        tasksList.innerHTML = tasks.length === 0
+            ? '<p class="text-xs text-slate-400 dark:text-slate-500">No tasks on this date</p>'
+            : tasks.map(t => {
+                const statusLabels = {
+                    'todo': { emoji: '📋', text: 'To Do', color: 'text-slate-600 dark:text-slate-400' },
+                    'inprogress': { emoji: '⏳', text: 'In Progress', color: 'text-blue-600 dark:text-blue-400' },
+                    'done': { emoji: '✅', text: 'Done', color: 'text-emerald-600 dark:text-emerald-400' }
+                };
+                const status = statusLabels[t.status] || statusLabels['todo'];
+                return `
+                    <div class="p-2 rounded-lg bg-slate-100 dark:bg-slate-700/40 text-sm flex items-center gap-2">
+                        <div class="font-medium text-slate-800 dark:text-slate-100 truncate flex-1">${esc(t.title)}</div>
+                        ${t.category ? `<span class="px-1.5 py-0.5 rounded text-xs bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 flex-shrink-0">${esc(t.category)}</span>` : ''}
+                        <span class="${status.color} text-xs font-medium ml-auto flex-shrink-0">${status.emoji} ${status.text}</span>
+                    </div>
+                `;
+            }).join('');
+    }
+
+    // Calendar event listeners
+    document.getElementById('openCalendarBtn').addEventListener('click', function() {
+        modalShow('calendarModal');
+        renderCalendar();
+        showSelectedDateTasks();
+    });
+
+    document.getElementById('closeCalendarModal').addEventListener('click', () => modalHide('calendarModal'));
+    document.getElementById('calendarModal').addEventListener('click', function(e) {
+        if (e.target === this) modalHide('calendarModal');
+    });
+
+    document.getElementById('prevMonth').addEventListener('click', function() {
+        calendarMonth--;
+        if (calendarMonth < 0) {
+            calendarMonth = 11;
+            calendarYear--;
+        }
+        renderCalendar();
+    });
+
+    document.getElementById('nextMonth').addEventListener('click', function() {
+        calendarMonth++;
+        if (calendarMonth > 11) {
+            calendarMonth = 0;
+            calendarYear++;
+        }
+        renderCalendar();
+    });
+
+    // ─── 24H SCHEDULE (wheel initialized in schedule-wheel.js) ────────────────
+    document.getElementById('openScheduleBtn').addEventListener('click', function() {
+        modalShow('scheduleModal');
+        initScheduleWheel();
+    });
+
+    document.getElementById('closeScheduleModal').addEventListener('click', () => modalHide('scheduleModal'));
+    document.getElementById('scheduleModal').addEventListener('click', function(e) {
+        if (e.target === this) modalHide('scheduleModal');
+    });
+
+    // ─── DATA EXPORT/IMPORT ───────────────────────────────────────────────────
+    function exportData() {
+        const data = {};
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key && key.startsWith('sa_')) {
+                data[key] = localStorage.getItem(key);
+            }
+        }
+
+        const blob = new Blob([JSON.stringify(data, null, 2)], {
+            type: 'application/json'
+        });
+
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `todo-backup-${new Date().toISOString().split('T')[0]}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+
+    function importData(file) {
+        const reader = new FileReader();
+
+        reader.onload = function(e) {
+            try {
+                const data = JSON.parse(e.target.result);
+                const allKeys = Object.keys(data);
+
+                if (allKeys.length === 0) {
+                    alert('Error: Invalid backup file (no data found)');
+                    return;
+                }
+
+                Object.keys(data).forEach((key) => {
+                    localStorage.setItem(key, data[key]);
+                });
+
+                alert(`✅ Data imported successfully!\n${allKeys.length} items restored.`);
+                location.reload();
+            } catch (err) {
+                alert('Error: Failed to import data. Make sure the file is valid JSON.');
+                console.error(err);
+            }
+        };
+
+        reader.onerror = function() {
+            alert('Error: Failed to read file.');
+        };
+
+        reader.readAsText(file);
+    }
+
+    document.getElementById('exportDataBtn').addEventListener('click', function() {
+        exportData();
+    });
+
+    document.getElementById('importDataBtn').addEventListener('click', function() {
+        document.getElementById('importDataInput').click();
+    });
+
+    document.getElementById('importDataInput').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            if (!file.name.endsWith('.json')) {
+                alert('Error: Please select a JSON file');
+                return;
+            }
+            if (confirm('This will replace your current data. Continue?')) {
+                importData(file);
+            }
+        }
     });
 
     // Dark mode
@@ -1369,6 +1922,8 @@ if (document.readyState === 'loading') {
     init();
 }
 </script>
+
+<script src="schedule-wheel.js"></script>
 
 </body>
 </html>
