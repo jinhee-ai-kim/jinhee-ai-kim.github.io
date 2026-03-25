@@ -749,7 +749,10 @@
 
                 <!-- Events List -->
                 <div>
-                    <p class="text-xs font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-3">Scheduled Events</p>
+                    <div class="flex items-center justify-between mb-3">
+                        <p class="text-xs font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">Scheduled Events</p>
+                        <button id="seeAllBtn" class="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors hidden">See all</button>
+                    </div>
                     <div id="schedEventList" class="space-y-2 max-h-80 overflow-y-auto">
                     </div>
                 </div>
@@ -1655,12 +1658,18 @@ function wireEvents() {
 
             const dayDiv = document.createElement('div');
             dayDiv.className = 'p-2 rounded-lg text-center cursor-pointer text-xs font-medium transition-all duration-200';
-            dayDiv.className += ' bg-slate-100 dark:bg-slate-700/40 hover:bg-blue-100 dark:hover:bg-blue-900/30';
 
-            if (taskCount > 0) {
-                dayDiv.className += ' border-2 border-blue-400 dark:border-blue-500';
+            // 선택된 날짜 강조
+            if (dateStr === calendarSelectedDate) {
+                dayDiv.className += ' bg-blue-500 dark:bg-blue-600 text-white border-2 border-blue-600 dark:border-blue-700 ring-2 ring-blue-400';
             } else {
-                dayDiv.className += ' border border-slate-200 dark:border-slate-600';
+                dayDiv.className += ' bg-slate-100 dark:bg-slate-700/40 hover:bg-blue-100 dark:hover:bg-blue-900/30';
+
+                if (taskCount > 0) {
+                    dayDiv.className += ' border-2 border-blue-400 dark:border-blue-500';
+                } else {
+                    dayDiv.className += ' border border-slate-200 dark:border-slate-600';
+                }
             }
 
             const today = new Date();
@@ -1671,6 +1680,7 @@ function wireEvents() {
             dayDiv.innerHTML = `<div>${day}</div>` + (taskCount > 0 ? `<div class="text-xs text-blue-600 dark:text-blue-400 font-bold">${taskCount}📌</div>` : '');
             dayDiv.addEventListener('click', () => {
                 calendarSelectedDate = dateStr;
+                renderCalendar();
                 showSelectedDateTasks();
             });
             grid.appendChild(dayDiv);
