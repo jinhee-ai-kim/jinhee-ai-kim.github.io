@@ -749,11 +749,12 @@
 
                 <!-- Events List -->
                 <div>
-                    <div class="flex items-center justify-between mb-3">
-                        <p class="text-xs font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">Scheduled Events</p>
-                        <button id="seeAllBtn" class="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors hidden">See all</button>
-                    </div>
-                    <div id="schedEventList" class="space-y-2 max-h-80 overflow-y-auto">
+                    <button id="toggleEventList" class="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-3 hover:text-slate-600 dark:hover:text-slate-400 transition-colors">
+                        <span id="toggleIcon">▶</span>
+                        Scheduled Events
+                    </button>
+                    <div id="schedEventListContainer" class="hidden space-y-2 max-h-80 overflow-y-auto">
+                        <div id="schedEventList"></div>
                     </div>
                 </div>
             </div>
