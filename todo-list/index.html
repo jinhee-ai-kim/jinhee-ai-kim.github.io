@@ -571,7 +571,7 @@
      style="display:none"
      class="fixed inset-0 z-50 flex items-center justify-center p-4
             bg-black/50 dark:bg-black/70 backdrop-blur-sm">
-    <div id="calendarModalContent" class="card w-full max-w-lg p-6 modal-pop flex flex-col transition-all duration-300" style="max-height: 90vh;">
+    <div id="calendarModalContent" class="card w-full max-w-lg p-6 modal-pop flex flex-col transition-all duration-300" style="max-height: 90vh; min-height: auto;">
 
         <div class="flex justify-between items-center mb-5">
             <div class="flex items-center gap-3">
@@ -586,7 +586,7 @@
         </div>
 
         <!-- Content: Calendar & Tasks + Detail Panel -->
-        <div class="flex gap-6 overflow-hidden">
+        <div id="contentWrapper" class="flex overflow-hidden" style="gap: 0;">
             <!-- Left: Calendar & Tasks List -->
             <div class="space-y-4 overflow-y-auto flex-shrink-0" style="width: 28rem;">
             <!-- Weekday headers -->
@@ -613,7 +613,7 @@
             </div>
 
             <!-- Right: Task Detail Panel -->
-            <div id="taskDetailPanel" class="w-80 pl-4 border-l border-slate-200 dark:border-slate-700 overflow-y-auto" style="display: none;">
+            <div id="taskDetailPanel" class="pl-4 border-l border-slate-200 dark:border-slate-700 transition-opacity duration-300" style="width: 0; height: 0; opacity: 0; pointer-events: none; overflow: hidden; flex-shrink: 0; min-height: 0;">
             <div class="flex justify-between items-center mb-4">
                 <button id="closeTaskDetail" class="btn-ghost p-1 text-lg">←</button>
                 <h3 class="font-bold text-sm flex-1 text-center">Task Details</h3>
@@ -1682,10 +1682,21 @@ function showTaskDetail(taskId) {
         </div>
     `;
 
-    panel.style.display = 'block';
-    // 모달 크기를 넓게 변경
+    // 먼저 모달 크기 변경
     const modalContent = document.getElementById('calendarModalContent');
-    modalContent.style.maxWidth = '50rem';
+    modalContent.style.maxWidth = '53rem';
+
+    // gap 추가
+    document.getElementById('contentWrapper').style.gap = '1.5rem';
+
+    // 그 다음 슬라이드 패널 표시
+    setTimeout(() => {
+        panel.style.opacity = '1';
+        panel.style.pointerEvents = 'auto';
+        panel.style.width = '20rem';
+        panel.style.height = 'auto';
+        panel.style.overflow = 'auto';
+    }, 50);
 }
 
 function handleDeleteGoal(id) {
@@ -1968,15 +1979,43 @@ function wireEvents() {
     });
 
     document.getElementById('closeCalendarModal').addEventListener('click', () => {
+        // 상세 페이지 초기화
+        const panel = document.getElementById('taskDetailPanel');
+        panel.style.opacity = '0';
+        panel.style.pointerEvents = 'none';
+        panel.style.width = '0';
+        panel.style.height = '0';
+        panel.style.overflow = 'hidden';
+
+        // gap 제거
+        document.getElementById('contentWrapper').style.gap = '0';
+
+        // 모달 크기 원래대로
+        const modalContent = document.getElementById('calendarModalContent');
+        modalContent.style.maxWidth = '32rem';
+
+        // 모달 닫기
         modalHide('calendarModal');
-        document.getElementById('taskDetailPanel').style.display = 'none';
     });
 
     document.getElementById('closeTaskDetail').addEventListener('click', () => {
-        document.getElementById('taskDetailPanel').style.display = 'none';
-        // 모달 크기를 원래대로 작게 변경
+        const panel = document.getElementById('taskDetailPanel');
+
+        // 1. 즉시 width, height와 pointer-events 제거 (transition 영향 안 받음)
+        panel.style.width = '0';
+        panel.style.height = '0';
+        panel.style.pointerEvents = 'none';
+        panel.style.overflow = 'hidden';
+
+        // 2. gap과 maxWidth도 즉시 변경
+        document.getElementById('contentWrapper').style.gap = '0';
         const modalContent = document.getElementById('calendarModalContent');
         modalContent.style.maxWidth = '32rem';
+
+        // 3. 마지막으로 opacity 변경 (이미 레이아웃은 완성됨)
+        setTimeout(() => {
+            panel.style.opacity = '0';
+        }, 10);
     });
     document.getElementById('calendarModal').addEventListener('click', function(e) {
         if (e.target === this) modalHide('calendarModal');
