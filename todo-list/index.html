@@ -379,6 +379,12 @@
                             ⬆️ Import Data
                         </button>
                     </div>
+                    <button id="openArchiveBtn"
+                            class="w-full px-3 py-1.5 rounded-lg text-xs font-medium
+                                   bg-slate-100 dark:bg-slate-700/40 text-slate-600 dark:text-slate-300
+                                   hover:bg-slate-200 dark:hover:bg-slate-700/60 transition-all duration-200 flex items-center justify-center gap-2">
+                        📥 View Archive
+                    </button>
                 </div>
             </div>
         </div>
@@ -565,7 +571,7 @@
      style="display:none"
      class="fixed inset-0 z-50 flex items-center justify-center p-4
             bg-black/50 dark:bg-black/70 backdrop-blur-sm">
-    <div class="card w-full max-w-lg p-6 modal-pop">
+    <div class="card w-full max-w-4xl p-6 modal-pop flex flex-col" style="max-height: 90vh;">
 
         <div class="flex justify-between items-center mb-5">
             <div class="flex items-center gap-3">
@@ -579,7 +585,10 @@
             </button>
         </div>
 
-        <div class="space-y-4">
+        <!-- Content: Calendar & Tasks + Detail Panel -->
+        <div class="flex gap-6 flex-1 overflow-hidden">
+            <!-- Left: Calendar & Tasks List -->
+            <div class="flex-1 space-y-4 overflow-y-auto">
             <!-- Weekday headers -->
             <div class="grid grid-cols-7 gap-1 mb-2">
                 <div class="text-center text-xs font-bold text-slate-400 dark:text-slate-500">Sun</div>
@@ -595,12 +604,23 @@
             <div class="grid grid-cols-7 gap-1" id="calendarGrid">
             </div>
 
-            <!-- Selected date tasks -->
-            <div id="selectedDateTasks" class="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
-                <p class="text-xs text-slate-400 dark:text-slate-500" id="selectedDateText">Select a date</p>
-                <div id="selectedTasksList" class="mt-3 space-y-2">
+                <!-- Selected date tasks -->
+                <div id="selectedDateTasks" class="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
+                    <p class="text-xs text-slate-400 dark:text-slate-500" id="selectedDateText">Select a date</p>
+                    <div id="selectedTasksList" class="mt-3 space-y-2">
+                    </div>
                 </div>
             </div>
+
+            <!-- Right: Task Detail Panel -->
+            <div id="taskDetailPanel" class="w-80 pl-4 border-l border-slate-200 dark:border-slate-700 overflow-y-auto" style="display: none;">
+            <div class="flex justify-between items-center mb-4">
+                <button id="closeTaskDetail" class="btn-ghost p-1 text-lg">←</button>
+                <h3 class="font-bold text-sm flex-1 text-center">Task Details</h3>
+            </div>
+            <div id="taskDetailContent" class="space-y-3">
+            </div>
+        </div>
         </div>
 
     </div>
@@ -763,6 +783,50 @@
 </div>
 
 <!-- ═══════════════════════════════════════════════════════════
+     ARCHIVE MODAL
+════════════════════════════════════════════════════════════ -->
+<div id="archiveModal"
+     style="display:none"
+     class="fixed inset-0 z-50 flex items-center justify-center p-4
+            bg-black/50 dark:bg-black/70 backdrop-blur-sm">
+    <div class="card w-full max-w-2xl p-6 modal-pop max-h-[90vh] overflow-y-auto">
+
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-lg font-bold">Archived Tasks</h2>
+            <button id="closeArchiveModal"
+                    class="btn-ghost w-8 h-8 flex items-center justify-center text-xl font-light leading-none">
+                ×
+            </button>
+        </div>
+
+        <!-- Search & Filter -->
+        <div class="mb-6 space-y-3">
+            <!-- Title Search -->
+            <input type="text" id="archiveSearchInput"
+                   placeholder="🔍 Search title…"
+                   class="input-field text-sm w-full">
+
+            <!-- Date Range Filter -->
+            <div class="flex gap-2">
+                <input type="date" id="archiveFilterDateFrom"
+                       placeholder="From"
+                       class="input-field text-sm flex-1"
+                       title="From date">
+                <input type="date" id="archiveFilterDateTo"
+                       placeholder="To"
+                       class="input-field text-sm flex-1"
+                       title="To date">
+            </div>
+        </div>
+
+        <!-- Archive list -->
+        <div id="archiveList" class="space-y-0.5">
+        </div>
+
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
      JAVASCRIPT
 ════════════════════════════════════════════════════════════ -->
 <script>
@@ -893,6 +957,7 @@ function taskCreate(data) {
         status:      data.status    || 'todo',
         dueDate:     data.dueDate   || '',
         completed:   false,
+        completedDate: '',
         order:       order,
         createdAt:   new Date().toISOString()
     };
@@ -932,11 +997,13 @@ function taskToggleComplete(id) {
     if (task.completed) {
         // Checking: move to Done column
         task.status = 'done';
+        task.completedDate = new Date().toISOString().split('T')[0];
     } else {
         // Unchecking: if in Done, move to In Progress
         if (task.status === 'done') {
             task.status = 'inprogress';
         }
+        task.completedDate = '';
     }
     lsSave();
 }
@@ -1143,6 +1210,11 @@ function buildTaskCard(task) {
         </div>
 
         <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex-shrink-0">
+            ${task.status === 'done'
+                ? `<button class="p-1.5 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 rounded transition-colors"
+                        onclick="handleArchiveTask('${esc(task.id)}')"
+                        title="Archive">📥</button>`
+                : ''}
             <button class="p-1.5 text-blue-600 hover:bg-blue-100 dark:hover:bg-blue-900/40 rounded transition-colors"
                     onclick="handleEditTask('${esc(task.id)}')"
                     title="Edit">✎</button>
@@ -1329,11 +1401,13 @@ function initDragAndDrop() {
 
                 task.status = newStatus;
 
-                // Auto-update completed state based on status
+                // Auto-update completed state based on status and set/clear completion date
                 if (newStatus === 'done') {
                     task.completed = true;
+                    task.completedDate = new Date().toISOString().split('T')[0];
                 } else {
                     task.completed = false;
+                    task.completedDate = '';
                 }
 
                 // Update order based on new DOM position
@@ -1448,6 +1522,167 @@ function handleDeleteTask(id) {
 function handleToggleComplete(id) {
     taskToggleComplete(id);
     renderAll();
+}
+
+function handleArchiveTask(id) {
+    const task = STATE.tasks.find(t => t.id === id);
+    if (!task) return;
+    task.status = 'archive';
+    lsSave();
+    renderAll();
+}
+
+function renderArchiveList() {
+    const searchText = document.getElementById('archiveSearchInput').value.toLowerCase();
+    const filterDateFrom = document.getElementById('archiveFilterDateFrom').value;
+    const filterDateTo = document.getElementById('archiveFilterDateTo').value;
+
+    let archived = STATE.tasks.filter(t => t.status === 'archive');
+
+    // Sort by completed date (newest first)
+    archived.sort((a, b) => {
+        const dateA = new Date(a.completedDate || '0000-00-00');
+        const dateB = new Date(b.completedDate || '0000-00-00');
+        return dateB - dateA;
+    });
+
+    // Filter by search text (title & description)
+    if (searchText) {
+        archived = archived.filter(t =>
+            t.title.toLowerCase().includes(searchText) ||
+            t.description.toLowerCase().includes(searchText)
+        );
+    }
+
+    // Filter by date range
+    if (filterDateFrom || filterDateTo) {
+        archived = archived.filter(t => {
+            const taskDate = t.completedDate;
+            if (filterDateFrom && taskDate < filterDateFrom) return false;
+            if (filterDateTo && taskDate > filterDateTo) return false;
+            return true;
+        });
+    }
+
+    const list = document.getElementById('archiveList');
+    if (archived.length === 0) {
+        list.innerHTML = '<p class="text-xs text-slate-400 dark:text-slate-500 text-center py-8">No archived tasks</p>';
+        return;
+    }
+
+    list.innerHTML = archived.map(task => `
+        <div class="pl-3 pr-3 pt-1 pb-1 rounded-lg bg-slate-100 dark:bg-slate-700/40 border border-slate-200 dark:border-slate-600">
+            <div class="flex items-center gap-3 justify-between">
+                <div class="flex items-center gap-2 min-w-0 flex-wrap">
+                    <div class="text-sm font-medium text-slate-800 dark:text-slate-100 whitespace-nowrap">${esc(task.title)}</div>
+                    ${task.category ? `<span class="px-1.5 py-0.5 rounded text-xs bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 whitespace-nowrap">${esc(task.category)}</span>` : ''}
+                    <span class="text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap">📅 ${task.completedDate}</span>
+                </div>
+                <div class="flex items-center gap-1 flex-shrink-0">
+                    <button class="p-1 text-blue-600 hover:bg-blue-100 dark:hover:bg-blue-900/40 rounded transition-colors text-lg"
+                            onclick="handleRestoreArchive('${esc(task.id)}')"
+                            title="Restore to Done">⏏️</button>
+                    <button class="p-1 text-red-600 hover:bg-red-100 dark:hover:bg-red-900/40 rounded transition-colors"
+                            onclick="handleDeleteArchive('${esc(task.id)}')"
+                            title="Delete">❎</button>
+                </div>
+            </div>
+            ${task.description ? `<div class="text-xs text-slate-500 dark:text-slate-400 mt-0 mb-1 line-clamp-2">${esc(task.description)}</div>` : ''}
+        </div>
+    `).join('');
+}
+
+function handleRestoreArchive(id) {
+    const task = STATE.tasks.find(t => t.id === id);
+    if (!task) return;
+    task.status = 'done';
+    task.completed = true;
+    lsSave();
+    renderArchiveList();
+    renderAll();
+}
+
+function handleDeleteArchive(id) {
+    const task = STATE.tasks.find(t => t.id === id);
+    if (!task) return;
+    taskDelete(id);
+    renderArchiveList();
+    renderAll();
+}
+
+function showTaskDetail(taskId) {
+    const task = STATE.tasks.find(t => t.id === taskId);
+    if (!task) return;
+
+    const statusLabels = {
+        'todo': { emoji: '📋', text: 'To Do' },
+        'inprogress': { emoji: '⏳', text: 'In Progress' },
+        'done': { emoji: '✅', text: 'Done' },
+        'archive': { emoji: '📥', text: 'Archive' }
+    };
+    const status = statusLabels[task.status] || statusLabels['todo'];
+
+    const panel = document.getElementById('taskDetailPanel');
+    const content = document.getElementById('taskDetailContent');
+
+    content.innerHTML = `
+        <div class="space-y-3">
+            <div>
+                <p class="text-xs text-slate-400 dark:text-slate-500 uppercase tracking-wide">Title</p>
+                <p class="text-sm font-bold text-slate-800 dark:text-slate-100 mt-1">${esc(task.title)}</p>
+            </div>
+
+            ${task.description ? `
+            <div>
+                <p class="text-xs text-slate-400 dark:text-slate-500 uppercase tracking-wide">Description</p>
+                <p class="text-sm text-slate-700 dark:text-slate-300 mt-1">${esc(task.description)}</p>
+            </div>
+            ` : ''}
+
+            <div class="grid grid-cols-2 gap-2">
+                <div>
+                    <p class="text-xs text-slate-400 dark:text-slate-500 uppercase tracking-wide">Status</p>
+                    <p class="text-sm font-medium mt-1">${status.emoji} ${status.text}</p>
+                </div>
+                ${task.category ? `
+                <div>
+                    <p class="text-xs text-slate-400 dark:text-slate-500 uppercase tracking-wide">Category</p>
+                    <p class="text-sm font-medium mt-1 px-2 py-1 rounded bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 inline-block">${esc(task.category)}</p>
+                </div>
+                ` : ''}
+            </div>
+
+            ${task.priority ? `
+            <div>
+                <p class="text-xs text-slate-400 dark:text-slate-500 uppercase tracking-wide">Priority</p>
+                <p class="text-sm font-medium mt-1 capitalize">${task.priority}</p>
+            </div>
+            ` : ''}
+
+            ${task.dueDate ? `
+            <div>
+                <p class="text-xs text-slate-400 dark:text-slate-500 uppercase tracking-wide">Due Date</p>
+                <p class="text-sm font-medium mt-1">📅 ${task.dueDate}</p>
+            </div>
+            ` : ''}
+
+            ${task.completedDate ? `
+            <div>
+                <p class="text-xs text-slate-400 dark:text-slate-500 uppercase tracking-wide">Completed Date</p>
+                <p class="text-sm font-medium mt-1">✓ ${task.completedDate}</p>
+            </div>
+            ` : ''}
+
+            ${task.createdAt ? `
+            <div>
+                <p class="text-xs text-slate-400 dark:text-slate-500 uppercase tracking-wide">Created</p>
+                <p class="text-xs mt-1">${new Date(task.createdAt).toLocaleDateString()}</p>
+            </div>
+            ` : ''}
+        </div>
+    `;
+
+    panel.style.display = 'block';
 }
 
 function handleDeleteGoal(id) {
@@ -1630,7 +1865,7 @@ function wireEvents() {
     let calendarSelectedDate = null;
 
     function getTasksByDate(dateStr) {
-        return STATE.tasks.filter(t => t.dueDate === dateStr);
+        return STATE.tasks.filter(t => t.dueDate === dateStr || (t.status === 'archive' && t.completedDate === dateStr));
     }
 
     function renderCalendar() {
@@ -1677,7 +1912,7 @@ function wireEvents() {
                 dayDiv.className += ' ring-2 ring-emerald-400 dark:ring-emerald-500';
             }
 
-            dayDiv.innerHTML = `<div>${day}</div>` + (taskCount > 0 ? `<div class="text-xs text-blue-600 dark:text-blue-400 font-bold">${taskCount}📌</div>` : '');
+            dayDiv.innerHTML = `<div>${day}</div>` + (taskCount > 0 ? `<div class="text-xs text-blue-600 dark:text-blue-400 font-bold">[${taskCount}]</div>` : '');
             dayDiv.addEventListener('click', () => {
                 calendarSelectedDate = dateStr;
                 renderCalendar();
@@ -1708,11 +1943,12 @@ function wireEvents() {
                 const statusLabels = {
                     'todo': { emoji: '📋', text: 'To Do', color: 'text-slate-600 dark:text-slate-400' },
                     'inprogress': { emoji: '⏳', text: 'In Progress', color: 'text-blue-600 dark:text-blue-400' },
-                    'done': { emoji: '✅', text: 'Done', color: 'text-emerald-600 dark:text-emerald-400' }
+                    'done': { emoji: '✅', text: 'Done', color: 'text-emerald-600 dark:text-emerald-400' },
+                    'archive': { emoji: '📥', text: 'Archive', color: 'text-amber-600 dark:text-amber-400' }
                 };
                 const status = statusLabels[t.status] || statusLabels['todo'];
                 return `
-                    <div class="p-2 rounded-lg bg-slate-100 dark:bg-slate-700/40 text-sm flex items-center gap-2">
+                    <div class="p-2 rounded-lg bg-slate-100 dark:bg-slate-700/40 text-sm flex items-center gap-2 cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-600/40 transition-colors" onclick="showTaskDetail('${esc(t.id)}')">
                         <div class="font-medium text-slate-800 dark:text-slate-100 truncate flex-1">${esc(t.title)}</div>
                         ${t.category ? `<span class="px-1.5 py-0.5 rounded text-xs bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 flex-shrink-0">${esc(t.category)}</span>` : ''}
                         <span class="${status.color} text-xs font-medium ml-auto flex-shrink-0">${status.emoji} ${status.text}</span>
@@ -1728,7 +1964,14 @@ function wireEvents() {
         showSelectedDateTasks();
     });
 
-    document.getElementById('closeCalendarModal').addEventListener('click', () => modalHide('calendarModal'));
+    document.getElementById('closeCalendarModal').addEventListener('click', () => {
+        modalHide('calendarModal');
+        document.getElementById('taskDetailPanel').style.display = 'none';
+    });
+
+    document.getElementById('closeTaskDetail').addEventListener('click', () => {
+        document.getElementById('taskDetailPanel').style.display = 'none';
+    });
     document.getElementById('calendarModal').addEventListener('click', function(e) {
         if (e.target === this) modalHide('calendarModal');
     });
@@ -1761,6 +2004,21 @@ function wireEvents() {
     document.getElementById('scheduleModal').addEventListener('click', function(e) {
         if (e.target === this) modalHide('scheduleModal');
     });
+
+    // ─── ARCHIVE MODAL ─────────────────────────────────────────
+    document.getElementById('openArchiveBtn').addEventListener('click', function() {
+        modalShow('archiveModal');
+        renderArchiveList();
+    });
+
+    document.getElementById('closeArchiveModal').addEventListener('click', () => modalHide('archiveModal'));
+    document.getElementById('archiveModal').addEventListener('click', function(e) {
+        if (e.target === this) modalHide('archiveModal');
+    });
+
+    document.getElementById('archiveSearchInput').addEventListener('input', renderArchiveList);
+    document.getElementById('archiveFilterDateFrom').addEventListener('change', renderArchiveList);
+    document.getElementById('archiveFilterDateTo').addEventListener('change', renderArchiveList);
 
     // ─── DATA EXPORT/IMPORT ───────────────────────────────────────────────────
     function exportData() {
