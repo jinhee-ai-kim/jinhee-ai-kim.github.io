@@ -571,7 +571,7 @@
      style="display:none"
      class="fixed inset-0 z-50 flex items-center justify-center p-4
             bg-black/50 dark:bg-black/70 backdrop-blur-sm">
-    <div class="card w-full max-w-4xl p-6 modal-pop flex flex-col" style="max-height: 90vh;">
+    <div id="calendarModalContent" class="card w-full max-w-lg p-6 modal-pop flex flex-col transition-all duration-300" style="max-height: 90vh;">
 
         <div class="flex justify-between items-center mb-5">
             <div class="flex items-center gap-3">
@@ -586,9 +586,9 @@
         </div>
 
         <!-- Content: Calendar & Tasks + Detail Panel -->
-        <div class="flex gap-6 flex-1 overflow-hidden">
+        <div class="flex gap-6 overflow-hidden">
             <!-- Left: Calendar & Tasks List -->
-            <div class="flex-1 space-y-4 overflow-y-auto">
+            <div class="space-y-4 overflow-y-auto flex-shrink-0" style="width: 28rem;">
             <!-- Weekday headers -->
             <div class="grid grid-cols-7 gap-1 mb-2">
                 <div class="text-center text-xs font-bold text-slate-400 dark:text-slate-500">Sun</div>
@@ -1683,6 +1683,9 @@ function showTaskDetail(taskId) {
     `;
 
     panel.style.display = 'block';
+    // 모달 크기를 넓게 변경
+    const modalContent = document.getElementById('calendarModalContent');
+    modalContent.style.maxWidth = '50rem';
 }
 
 function handleDeleteGoal(id) {
@@ -1971,6 +1974,9 @@ function wireEvents() {
 
     document.getElementById('closeTaskDetail').addEventListener('click', () => {
         document.getElementById('taskDetailPanel').style.display = 'none';
+        // 모달 크기를 원래대로 작게 변경
+        const modalContent = document.getElementById('calendarModalContent');
+        modalContent.style.maxWidth = '32rem';
     });
     document.getElementById('calendarModal').addEventListener('click', function(e) {
         if (e.target === this) modalHide('calendarModal');
