@@ -57,7 +57,8 @@
                    shadow-sm p-3.5
                    cursor-grab active:cursor-grabbing
                    select-none
-                   transition-all duration-200;
+                   transition-all duration-200
+                   overflow-visible;
         }
         .task-card:hover {
             @apply shadow-md border-slate-300 dark:border-slate-600 -translate-y-px;
@@ -76,7 +77,7 @@
         .col-wrap {
             @apply bg-slate-100/70 dark:bg-slate-900/40
                    rounded-2xl border border-slate-200 dark:border-slate-700/40
-                   p-4;
+                   p-4 overflow-visible;
         }
 
         .goal-pill {
@@ -496,10 +497,11 @@
                     <label class="block text-xs font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-1.5">
                         Status
                     </label>
-                    <select id="taskStatus" class="input-field">
+                    <select id="taskStatus" class="input-field" onchange="updateTaskDateFields()">
                         <option value="todo">To Do</option>
                         <option value="inprogress">In Progress</option>
                         <option value="done">Done</option>
+                        <option value="archive">Archive</option>
                     </select>
                 </div>
             </div>
@@ -515,11 +517,19 @@
                         <option value="high">🔴 High</option>
                     </select>
                 </div>
-                <div>
-                    <label class="block text-xs font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-1.5">
-                        Due Date
-                    </label>
-                    <input type="date" id="taskDueDate" class="input-field">
+                <div id="dateFieldWrapper">
+                    <div id="dueDateField">
+                        <label class="block text-xs font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-1.5">
+                            Due Date
+                        </label>
+                        <input type="date" id="taskDueDate" class="input-field">
+                    </div>
+                    <div id="completedDateField" style="display: none;">
+                        <label class="block text-xs font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-1.5">
+                            Completed Date
+                        </label>
+                        <input type="date" id="taskCompletedDate" class="input-field">
+                    </div>
                 </div>
             </div>
 
@@ -571,7 +581,7 @@
      style="display:none"
      class="fixed inset-0 z-50 flex items-center justify-center p-4
             bg-black/50 dark:bg-black/70 backdrop-blur-sm">
-    <div id="calendarModalContent" class="card w-full max-w-lg p-6 modal-pop flex flex-col transition-all duration-300" style="max-height: 90vh; min-height: auto;">
+    <div id="calendarModalContent" class="card w-full p-6 modal-pop flex flex-col transition-all duration-300" style="max-width: 30rem; max-height: 90vh; min-height: auto;">
 
         <div class="flex justify-between items-center mb-5">
             <div class="flex items-center gap-3">
@@ -588,7 +598,7 @@
         <!-- Content: Calendar & Tasks + Detail Panel -->
         <div id="contentWrapper" class="flex overflow-hidden" style="gap: 0;">
             <!-- Left: Calendar & Tasks List -->
-            <div class="space-y-4 overflow-y-auto flex-shrink-0" style="width: 28rem;">
+            <div class="space-y-4 overflow-y-auto flex-shrink-0" style="width: 26rem; margin: 0 auto;">
             <!-- Weekday headers -->
             <div class="grid grid-cols-7 gap-1 mb-2">
                 <div class="text-center text-xs font-bold text-slate-400 dark:text-slate-500">Sun</div>
@@ -613,12 +623,27 @@
             </div>
 
             <!-- Right: Task Detail Panel -->
-            <div id="taskDetailPanel" class="pl-4 border-l border-slate-200 dark:border-slate-700 transition-opacity duration-300" style="width: 0; height: 0; opacity: 0; pointer-events: none; overflow: hidden; flex-shrink: 0; min-height: 0;">
-            <div class="flex justify-between items-center mb-4">
+            <div id="taskDetailPanel" class="border-l border-slate-200 dark:border-slate-700 transition-opacity duration-300 flex flex-col" style="width: 0; height: 0; opacity: 0; pointer-events: none; overflow: hidden; flex-shrink: 0; min-height: 0;">
+            <div class="flex justify-between items-center mb-4 relative flex-shrink-0 pl-4">
                 <button id="closeTaskDetail" class="btn-ghost p-1 text-lg">←</button>
                 <h3 class="font-bold text-sm flex-1 text-center">Task Details</h3>
+
+                <!-- Task Menu -->
+                <div id="taskMenuContainer" class="relative">
+                    <button id="taskMenuBtn" class="btn-ghost p-1 text-lg">⋮</button>
+                    <div id="taskMenu" class="absolute -left-[100px] top-full mt-1 bg-white dark:bg-slate-700 rounded-lg shadow-lg border border-slate-200 dark:border-slate-600 z-10 hidden w-28">
+                        <button class="edit-menu-btn w-full flex items-center justify-between px-3 py-1.5 text-xs text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-600/40 transition-colors">
+                            <span>Edit</span> <span>✎</span>
+                        </button>
+                        <button class="delete-menu-btn w-full flex items-center justify-between px-3 py-1.5 text-xs text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
+                            <span>Delete</span> <span>🗑️</span>
+                        </button>
+                    </div>
+                </div>
             </div>
-            <div id="taskDetailContent" class="space-y-3">
+            <div id="taskDetailContent" class="space-y-3 flex-1 overflow-y-auto px-4">
+            </div>
+            <div id="taskDetailButtons" class="border-t border-slate-200 dark:border-slate-700 pt-4 flex gap-2 flex-shrink-0 hidden">
             </div>
         </div>
         </div>
@@ -1169,10 +1194,11 @@ function buildTaskCard(task) {
         }
     }
     const overdue   = isOverdue(task.dueDate);
-    const titleCls  = task.completed
+    const isDone    = task.status === 'done';
+    const titleCls  = isDone
         ? 'line-through text-slate-400 dark:text-slate-500'
         : 'text-slate-800 dark:text-slate-100';
-    const checkCls  = task.completed
+    const checkCls  = isDone
         ? 'bg-emerald-500 border-emerald-500 text-white'
         : 'border-slate-300 dark:border-slate-600 hover:border-emerald-400 dark:hover:border-emerald-500 text-transparent';
     const priCls    =
@@ -1181,7 +1207,7 @@ function buildTaskCard(task) {
                                      'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400';
 
     return `
-<div class="task-card pri-${esc(task.priority)} ${task.completed ? 'opacity-50' : ''} fade-up group"
+<div class="task-card pri-${esc(task.priority)} ${isDone ? 'opacity-50' : ''} fade-up group"
      data-task-id="${esc(task.id)}">
 
     <div class="flex gap-2.5 items-start">
@@ -1203,24 +1229,22 @@ function buildTaskCard(task) {
                        </span>`
                     : ''}
                 <span class="px-2 py-0.5 rounded-full text-xs font-semibold ${priCls}">${esc(task.priority)}</span>
-                ${task.dueDate
+                ${(task.status === 'done' && task.completedDate)
+                    ? `<span class="text-xs text-emerald-600 dark:text-emerald-400 font-medium">✅ ${formatDate(task.completedDate)}</span>`
+                    : task.dueDate
                     ? `<span class="text-xs ${dateCls}">📅 ${formatDate(task.dueDate)} ${getDayCount(task.dueDate)}${overdue ? ' ⚠' : ''}</span>`
                     : ''}
             </div>
         </div>
 
-        <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex-shrink-0">
-            ${task.status === 'done'
-                ? `<button class="p-1.5 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 rounded transition-colors"
-                        onclick="handleArchiveTask('${esc(task.id)}')"
-                        title="Archive">📥</button>`
-                : ''}
-            <button class="p-1.5 text-blue-600 hover:bg-blue-100 dark:hover:bg-blue-900/40 rounded transition-colors"
-                    onclick="handleEditTask('${esc(task.id)}')"
-                    title="Edit">✎</button>
-            <button class="p-1.5 text-red-600 hover:bg-red-100 dark:hover:bg-red-900/40 rounded transition-colors"
-                    onclick="handleDeleteTask('${esc(task.id)}')"
-                    title="Delete">🗑</button>
+        <div class="relative opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex-shrink-0">
+            <button class="p-1.5 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 rounded transition-colors"
+                    onclick="toggleTaskCardMenu('${esc(task.id)}', event)">⋮</button>
+            <div id="taskCardMenu_${esc(task.id)}" class="taskCardMenu absolute right-0 top-full mt-1 bg-white dark:bg-slate-700 rounded-lg shadow-lg border border-slate-200 dark:border-slate-600 z-50 hidden w-28">
+                ${task.status === 'done' ? `<button onclick="handleArchiveTask('${esc(task.id)}')" class="w-full flex items-center justify-between px-3 py-1.5 text-xs text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-600/40 transition-colors"><span>Archive</span> <span>📥</span></button>` : ''}
+                <button onclick="handleEditTask('${esc(task.id)}')" class="w-full flex items-center justify-between px-3 py-1.5 text-xs text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-600/40 transition-colors"><span>Edit</span> <span>✎</span></button>
+                <button onclick="handleDeleteTask('${esc(task.id)}')" class="w-full flex items-center justify-between px-3 py-1.5 text-xs text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"><span>Delete</span> <span>🗑️</span></button>
+            </div>
         </div>
     </div>
 </div>`;
@@ -1254,9 +1278,9 @@ function renderBoard() {
 }
 
 function renderStats() {
-    const all   = STATE.tasks;
+    const all   = STATE.tasks.filter(t => t.status !== 'archive');  // ✅ archive 제외
     const total = all.length;
-    const done  = all.filter(t => t.completed).length;
+    const done  = all.filter(t => t.status === 'done').length;  // ✅ status === 'done'만 카운트
     const pct   = total === 0 ? 0 : Math.round((done / total) * 100);
 
     document.getElementById('completedCount').textContent = done;
@@ -1466,6 +1490,20 @@ function modalHide(modalId) {
     if (modalId === 'taskModal') STATE.editingId = null;
 }
 
+function updateTaskDateFields() {
+    const status = document.getElementById('taskStatus').value;
+    const dueDateField = document.getElementById('dueDateField');
+    const completedDateField = document.getElementById('completedDateField');
+
+    if (status === 'done' || status === 'archive') {
+        dueDateField.style.display = 'none';
+        completedDateField.style.display = 'grid';
+    } else {
+        dueDateField.style.display = 'block';
+        completedDateField.style.display = 'none';
+    }
+}
+
 function closeTaskModalWithConfirm() {
     const titleInput = document.getElementById('taskTitle');
     const titleValue = titleInput ? titleInput.value.trim() : '';
@@ -1488,7 +1526,9 @@ function openAddModal() {
     document.getElementById('taskForm').reset();
     document.getElementById('titleError').classList.add('hidden');
     document.getElementById('deleteTaskBtn').classList.add('hidden');
+    document.getElementById('taskCompletedDate').value = '';
     renderCategorySelect();
+    updateTaskDateFields();
     modalShow('taskModal');
     setTimeout(() => document.getElementById('taskTitle').focus(), 50);
 }
@@ -1507,16 +1547,33 @@ function handleEditTask(id) {
     document.getElementById('taskPriority').value    = task.priority;
     document.getElementById('taskStatus').value      = task.status;
     document.getElementById('taskDueDate').value     = task.dueDate;
+    document.getElementById('taskCompletedDate').value = task.completedDate || '';
     document.getElementById('titleError').classList.add('hidden');
     document.getElementById('deleteTaskBtn').classList.remove('hidden');
 
+    updateTaskDateFields();
     modalShow('taskModal');
     setTimeout(() => document.getElementById('taskTitle').focus(), 50);
 }
 
 function handleDeleteTask(id) {
-    taskDelete(id);
-    renderAll();
+    const task = STATE.tasks.find(t => t.id === id);
+    if (!task) return;
+
+    const confirmed = confirm(
+        `⚠️ Delete "${task.title}"?\n\nThis action is irreversible and cannot be undone.`
+    );
+
+    if (confirmed) {
+        taskDelete(id);
+        renderAll();
+
+        // ✅ calendar modal이 열려있으면 업데이트
+        const calendarModal = document.getElementById('calendarModal');
+        if (calendarModal && calendarModal.style.display !== 'none') {
+            window.refreshCalendarView?.();
+        }
+    }
 }
 
 function handleToggleComplete(id) {
@@ -1610,7 +1667,7 @@ function handleDeleteArchive(id) {
     renderAll();
 }
 
-function showTaskDetail(taskId) {
+function showTaskDetail(taskId, editMode = false) {
     const task = STATE.tasks.find(t => t.id === taskId);
     if (!task) return;
 
@@ -1625,66 +1682,189 @@ function showTaskDetail(taskId) {
     const panel = document.getElementById('taskDetailPanel');
     const content = document.getElementById('taskDetailContent');
 
-    content.innerHTML = `
-        <div class="space-y-3">
-            <div>
-                <p class="text-xs text-slate-400 dark:text-slate-500 uppercase tracking-wide">Title</p>
-                <p class="text-sm font-bold text-slate-800 dark:text-slate-100 mt-1">${esc(task.title)}</p>
-            </div>
+    // ✅ Menu 버튼 생성 및 이벤트 핸들러
+    const menuContainer = document.getElementById('taskMenuContainer');
+    let menuBtn = menuContainer.querySelector('.task-menu-btn');
 
-            ${task.description ? `
-            <div>
-                <p class="text-xs text-slate-400 dark:text-slate-500 uppercase tracking-wide">Description</p>
-                <p class="text-sm text-slate-700 dark:text-slate-300 mt-1">${esc(task.description)}</p>
-            </div>
-            ` : ''}
+    if (!menuBtn) {
+        menuBtn = document.createElement('button');
+        menuBtn.className = 'task-menu-btn btn-ghost p-1 text-lg';
+        menuBtn.innerHTML = '⋮';
+        menuContainer.insertBefore(menuBtn, menuContainer.firstChild);
+    }
 
-            <div class="grid grid-cols-2 gap-2">
+    // Menu 버튼 클릭 핸들러
+    menuBtn.onclick = (e) => {
+        e.stopPropagation();
+        const menu = document.getElementById('taskMenu');
+        menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+    };
+
+    // ✅ Menu 버튼들 업데이트
+    const editMenuBtn = document.querySelector('#taskMenu .edit-menu-btn');
+    const deleteMenuBtn = document.querySelector('#taskMenu .delete-menu-btn');
+
+    if (editMenuBtn) {
+        editMenuBtn.onclick = () => {
+            document.getElementById('taskMenu').style.display = 'none';
+            showTaskDetail(taskId, true);  // ✅ edit mode로 열기
+        };
+    }
+
+    if (deleteMenuBtn) {
+        deleteMenuBtn.onclick = () => {
+            document.getElementById('taskMenu').style.display = 'none';
+            deleteTaskConfirm(taskId);
+        };
+    }
+
+    // ✅ Edit mode 렌더링
+    if (editMode) {
+        const categories = STATE.categories.map(c => c.name);
+
+        // ✅ 현재 form의 status 값을 확인 (status 변경 시 UI 업데이트)
+        const statusSelect = document.getElementById('statusEdit');
+        const currentStatus = statusSelect ? statusSelect.value : task.status;
+
+        const buttonDiv = document.getElementById('taskDetailButtons');
+        buttonDiv.className = 'border-t border-slate-200 dark:border-slate-700 pt-4 flex gap-2 flex-shrink-0';
+        buttonDiv.innerHTML = `
+            <button onclick="saveTaskEdits('${taskId}')" class="flex-1 bg-blue-500 hover:bg-blue-600 text-white rounded-lg py-2 text-sm font-medium transition-colors">
+                ✓ Save
+            </button>
+            <button onclick="cancelTaskEdits('${taskId}')" class="flex-1 bg-slate-500/10 hover:bg-slate-500/20 text-slate-600 dark:text-slate-400 rounded-lg py-2 text-sm font-medium transition-colors">
+                ✕ Cancel
+            </button>
+        `;
+
+        content.innerHTML = `
+            <div class="space-y-3">
+                <div>
+                    <p class="text-xs text-slate-400 dark:text-slate-500 uppercase tracking-wide">Title</p>
+                    <input type="text" id="titleEdit" value="${esc(task.title)}" class="input-field mt-1">
+                </div>
+
+                <div>
+                    <p class="text-xs text-slate-400 dark:text-slate-500 uppercase tracking-wide">Description</p>
+                    <textarea id="descriptionEdit" class="input-field mt-1 resize-none" rows="3">${esc(task.description || '')}</textarea>
+                </div>
+
                 <div>
                     <p class="text-xs text-slate-400 dark:text-slate-500 uppercase tracking-wide">Status</p>
-                    <p class="text-sm font-medium mt-1">${status.emoji} ${status.text}</p>
+                    <select id="statusEdit" class="input-field mt-1" onchange="showTaskDetail('${taskId}', true)">
+                        <option value="todo" ${currentStatus === 'todo' ? 'selected' : ''}>📋 To Do</option>
+                        <option value="inprogress" ${currentStatus === 'inprogress' ? 'selected' : ''}>⏳ In Progress</option>
+                        <option value="done" ${currentStatus === 'done' ? 'selected' : ''}>✅ Done</option>
+                        <option value="archive" ${currentStatus === 'archive' ? 'selected' : ''}>📥 Archive</option>
+                    </select>
                 </div>
-                ${task.category ? `
+
                 <div>
                     <p class="text-xs text-slate-400 dark:text-slate-500 uppercase tracking-wide">Category</p>
-                    <p class="text-sm font-medium mt-1 px-2 py-1 rounded bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 inline-block">${esc(task.category)}</p>
+                    <select id="categoryEdit" class="input-field mt-1">
+                        <option value="">- None -</option>
+                        ${categories.map(c => `<option value="${esc(c)}" ${task.category === c ? 'selected' : ''}>${esc(c)}</option>`).join('')}
+                    </select>
+                </div>
+
+                <div>
+                    <p class="text-xs text-slate-400 dark:text-slate-500 uppercase tracking-wide">Priority</p>
+                    <select id="priorityEdit" class="input-field mt-1">
+                        <option value="">- None -</option>
+                        <option value="high" ${task.priority === 'high' ? 'selected' : ''}>High</option>
+                        <option value="medium" ${task.priority === 'medium' ? 'selected' : ''}>Medium</option>
+                        <option value="low" ${task.priority === 'low' ? 'selected' : ''}>Low</option>
+                    </select>
+                </div>
+
+                ${(currentStatus !== 'done' && currentStatus !== 'archive') ? `
+                <div>
+                    <p class="text-xs text-slate-400 dark:text-slate-500 uppercase tracking-wide">Due Date</p>
+                    <input type="date" id="dueDateEdit" value="${task.dueDate || ''}" class="input-field mt-1">
+                </div>
+                ` : ''}
+
+                ${(currentStatus === 'done' || currentStatus === 'archive') ? `
+                <div>
+                    <p class="text-xs text-slate-400 dark:text-slate-500 uppercase tracking-wide">Completed Date</p>
+                    <input type="date" id="completedDateEdit" value="${task.completedDate || ''}" class="input-field mt-1">
+                </div>
+                ` : ''}
+
+                ${task.createdAt ? `
+                <div>
+                    <p class="text-xs text-slate-400 dark:text-slate-500 uppercase tracking-wide">Created</p>
+                    <p class="text-xs mt-1 text-slate-500">${new Date(task.createdAt).toLocaleDateString()}</p>
                 </div>
                 ` : ''}
             </div>
+        `;
+    } else {
+        // ✅ View mode 렌더링
+        const buttonDiv = document.getElementById('taskDetailButtons');
+        buttonDiv.className = 'border-t border-slate-200 dark:border-slate-700 pt-4 flex gap-2 flex-shrink-0 hidden';  // 숨기기
 
-            ${task.priority ? `
-            <div>
-                <p class="text-xs text-slate-400 dark:text-slate-500 uppercase tracking-wide">Priority</p>
-                <p class="text-sm font-medium mt-1 capitalize">${task.priority}</p>
-            </div>
-            ` : ''}
+        content.innerHTML = `
+            <div class="space-y-3">
+                <div>
+                    <p class="text-xs text-slate-400 dark:text-slate-500 uppercase tracking-wide">Title</p>
+                    <p class="text-sm font-bold text-slate-800 dark:text-slate-100 mt-1">${esc(task.title)}</p>
+                </div>
 
-            ${task.dueDate ? `
-            <div>
-                <p class="text-xs text-slate-400 dark:text-slate-500 uppercase tracking-wide">Due Date</p>
-                <p class="text-sm font-medium mt-1">📅 ${task.dueDate}</p>
-            </div>
-            ` : ''}
+                ${task.description ? `
+                <div>
+                    <p class="text-xs text-slate-400 dark:text-slate-500 uppercase tracking-wide">Description</p>
+                    <p class="text-sm text-slate-700 dark:text-slate-300 mt-1">${esc(task.description)}</p>
+                </div>
+                ` : ''}
 
-            ${task.completedDate ? `
-            <div>
-                <p class="text-xs text-slate-400 dark:text-slate-500 uppercase tracking-wide">Completed Date</p>
-                <p class="text-sm font-medium mt-1">✓ ${task.completedDate}</p>
-            </div>
-            ` : ''}
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <p class="text-xs text-slate-400 dark:text-slate-500 uppercase tracking-wide">Status</p>
+                        <p class="text-sm font-medium mt-1">${status.emoji} ${status.text}</p>
+                    </div>
+                    ${task.category ? `
+                    <div>
+                        <p class="text-xs text-slate-400 dark:text-slate-500 uppercase tracking-wide">Category</p>
+                        <p class="text-sm font-medium mt-1 px-2 py-1 rounded bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 inline-block">${esc(task.category)}</p>
+                    </div>
+                    ` : ''}
+                </div>
 
-            ${task.createdAt ? `
-            <div>
-                <p class="text-xs text-slate-400 dark:text-slate-500 uppercase tracking-wide">Created</p>
-                <p class="text-xs mt-1">${new Date(task.createdAt).toLocaleDateString()}</p>
+                ${task.priority ? `
+                <div>
+                    <p class="text-xs text-slate-400 dark:text-slate-500 uppercase tracking-wide">Priority</p>
+                    <p class="text-sm font-medium mt-1 capitalize">${task.priority}</p>
+                </div>
+                ` : ''}
+
+                ${(task.status !== 'done' && task.status !== 'archive') ? `
+                <div>
+                    <p class="text-xs text-slate-400 dark:text-slate-500 uppercase tracking-wide">Due Date</p>
+                    <p class="text-sm font-medium mt-1">📅 ${task.dueDate || '-'}</p>
+                </div>
+                ` : ''}
+
+                ${(task.status === 'done' || task.status === 'archive') ? `
+                <div>
+                    <p class="text-xs text-slate-400 dark:text-slate-500 uppercase tracking-wide">Completed Date</p>
+                    <p class="text-sm font-medium mt-1">✓ ${task.completedDate || '-'}</p>
+                </div>
+                ` : ''}
+
+                ${task.createdAt ? `
+                <div>
+                    <p class="text-xs text-slate-400 dark:text-slate-500 uppercase tracking-wide">Created</p>
+                    <p class="text-xs mt-1">${new Date(task.createdAt).toLocaleDateString()}</p>
+                </div>
+                ` : ''}
             </div>
-            ` : ''}
-        </div>
-    `;
+        `;
+    }
 
     // 먼저 모달 크기 변경
     const modalContent = document.getElementById('calendarModalContent');
-    modalContent.style.maxWidth = '53rem';
+    modalContent.style.maxWidth = '50rem';
 
     // gap 추가
     document.getElementById('contentWrapper').style.gap = '1.5rem';
@@ -1697,6 +1877,125 @@ function showTaskDetail(taskId) {
         panel.style.height = 'auto';
         panel.style.overflow = 'auto';
     }, 50);
+}
+
+function updateTaskDate(taskId, field, value) {
+    const task = STATE.tasks.find(t => t.id === taskId);
+    if (!task) return;
+
+    taskUpdate(taskId, { [field]: value });
+    showTaskDetail(taskId);
+    renderAll();
+
+    // ✅ calendar modal이 열려있으면 calendar 업데이트
+    const calendarModal = document.getElementById('calendarModal');
+    if (calendarModal && calendarModal.style.display !== 'none') {
+        window.refreshCalendarView?.();
+    }
+}
+
+function saveTaskEdits(taskId) {
+    const task = STATE.tasks.find(t => t.id === taskId);
+    if (!task) return;
+
+    const updates = {};
+
+    // ✅ 모든 필드 수집
+    const titleInput = document.getElementById('titleEdit');
+    const descriptionInput = document.getElementById('descriptionEdit');
+    const statusInput = document.getElementById('statusEdit');
+    const categoryInput = document.getElementById('categoryEdit');
+    const priorityInput = document.getElementById('priorityEdit');
+    const dueDateInput = document.getElementById('dueDateEdit');
+    const completedDateInput = document.getElementById('completedDateEdit');
+
+    if (titleInput && titleInput.value.trim()) {
+        updates.title = titleInput.value.trim();
+    }
+    if (descriptionInput) {
+        updates.description = descriptionInput.value.trim();
+    }
+    if (statusInput) {
+        updates.status = statusInput.value;
+    }
+    if (categoryInput) {
+        updates.category = categoryInput.value || null;
+    }
+    if (priorityInput) {
+        updates.priority = priorityInput.value || null;
+    }
+    if (dueDateInput && dueDateInput.value) {
+        updates.dueDate = dueDateInput.value;
+    }
+    if (completedDateInput && completedDateInput.value) {
+        updates.completedDate = completedDateInput.value;
+    }
+
+    if (Object.keys(updates).length > 0) {
+        taskUpdate(taskId, updates);
+    }
+
+    showTaskDetail(taskId, false);  // ✅ edit mode 해제
+    renderAll();
+
+    const calendarModal = document.getElementById('calendarModal');
+    if (calendarModal && calendarModal.style.display !== 'none') {
+        window.refreshCalendarView?.();
+    }
+}
+
+function cancelTaskEdits(taskId) {
+    showTaskDetail(taskId, false);  // ✅ edit mode 해제, 변경사항 저장 안 함
+}
+
+function toggleTaskCardMenu(taskId, event) {
+    event.stopPropagation();
+    const menu = document.getElementById(`taskCardMenu_${taskId}`);
+
+    // 다른 menu들 닫기
+    document.querySelectorAll('.taskCardMenu').forEach(m => {
+        if (m.id !== `taskCardMenu_${taskId}`) {
+            m.classList.add('hidden');
+        }
+    });
+
+    // 현재 menu 토글
+    menu.classList.toggle('hidden');
+
+    // 외부 클릭 시 menu 닫기
+    document.addEventListener('click', function closeMenu(e) {
+        if (!menu.parentElement.contains(e.target)) {
+            menu.classList.add('hidden');
+            document.removeEventListener('click', closeMenu);
+        }
+    });
+}
+
+// 하위 호환성을 위한 래퍼 함수
+function saveTaskDateEdits(taskId) {
+    saveTaskEdits(taskId);
+}
+
+function cancelTaskDateEdits(taskId) {
+    cancelTaskEdits(taskId);
+}
+
+// ✅ 캘린더에서 delete 호출 (detail panel 닫기 포함)
+function deleteTaskConfirm(taskId) {
+    handleDeleteTask(taskId);
+
+    // Task details 닫기 (캘린더 전용)
+    const panel = document.getElementById('taskDetailPanel');
+    panel.style.width = '0';
+    panel.style.height = '0';
+    panel.style.pointerEvents = 'none';
+    panel.style.overflow = 'hidden';
+    document.getElementById('contentWrapper').style.gap = '0';
+    const modalContent = document.getElementById('calendarModalContent');
+    modalContent.style.maxWidth = '30rem';
+    setTimeout(() => {
+        panel.style.opacity = '0';
+    }, 10);
 }
 
 function handleDeleteGoal(id) {
@@ -1755,13 +2054,15 @@ function handleFormSubmit(e) {
 
     document.getElementById('titleError').classList.add('hidden');
 
+    const status = document.getElementById('taskStatus').value;
     const data = {
         title,
         description: document.getElementById('taskDescription').value,
         category:    document.getElementById('taskCategory').value,
         priority:    document.getElementById('taskPriority').value,
-        status:      document.getElementById('taskStatus').value,
-        dueDate:     document.getElementById('taskDueDate').value
+        status:      status,
+        dueDate:     (status === 'done' || status === 'archive') ? '' : document.getElementById('taskDueDate').value,
+        completedDate: (status === 'done' || status === 'archive') ? document.getElementById('taskCompletedDate').value : ''
     };
 
     if (STATE.editingId) {
@@ -1879,7 +2180,13 @@ function wireEvents() {
     let calendarSelectedDate = null;
 
     function getTasksByDate(dateStr) {
-        return STATE.tasks.filter(t => t.dueDate === dateStr || (t.status === 'archive' && t.completedDate === dateStr));
+        return STATE.tasks.filter(t => {
+            if (t.status === 'done' || t.status === 'archive') {
+                return t.completedDate === dateStr;
+            } else {
+                return t.dueDate === dateStr;
+            }
+        });
     }
 
     function renderCalendar() {
@@ -1926,11 +2233,26 @@ function wireEvents() {
                 dayDiv.className += ' ring-2 ring-emerald-400 dark:ring-emerald-500';
             }
 
-            dayDiv.innerHTML = `<div>${day}</div>` + (taskCount > 0 ? `<div class="text-xs text-blue-600 dark:text-blue-400 font-bold">[${taskCount}]</div>` : '');
+            // ✅ [완료된것/전체] 형태로 count 표시
+            const completedCount = tasksOnDate.filter(t => t.status === 'done' || t.status === 'archive').length;
+            dayDiv.innerHTML = `<div>${day}</div>` + (taskCount > 0 ? `<div class="text-xs text-blue-600 dark:text-blue-400 font-bold">[${completedCount}/${taskCount}]</div>` : '');
             dayDiv.addEventListener('click', () => {
                 calendarSelectedDate = dateStr;
                 renderCalendar();
                 showSelectedDateTasks();
+
+                // ✅ task details 닫기
+                const panel = document.getElementById('taskDetailPanel');
+                panel.style.width = '0';
+                panel.style.height = '0';
+                panel.style.pointerEvents = 'none';
+                panel.style.overflow = 'hidden';
+                document.getElementById('contentWrapper').style.gap = '0';
+                const modalContent = document.getElementById('calendarModalContent');
+                modalContent.style.maxWidth = '30rem';
+                setTimeout(() => {
+                    panel.style.opacity = '0';
+                }, 10);
             });
             grid.appendChild(dayDiv);
         }
@@ -1943,7 +2265,12 @@ function wireEvents() {
             return;
         }
 
-        const tasks = getTasksByDate(calendarSelectedDate);
+        let tasks = getTasksByDate(calendarSelectedDate);
+
+        // Status 순서: todo -> inprogress -> done -> archive
+        const statusOrder = { todo: 0, inprogress: 1, done: 2, archive: 3 };
+        tasks.sort((a, b) => (statusOrder[a.status] || 0) - (statusOrder[b.status] || 0));
+
         const [y, m, d] = calendarSelectedDate.split('-').map(Number);
         const dateObj = new Date(y, m - 1, d);
         const dateStr = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
@@ -1971,6 +2298,12 @@ function wireEvents() {
             }).join('');
     }
 
+    // ✅ window에 calendar 함수들 할당 (외부에서 접근 가능하게)
+    window.refreshCalendarView = function() {
+        renderCalendar();
+        showSelectedDateTasks();
+    };
+
     // Calendar event listeners
     document.getElementById('openCalendarBtn').addEventListener('click', function() {
         modalShow('calendarModal');
@@ -1992,7 +2325,7 @@ function wireEvents() {
 
         // 모달 크기 원래대로
         const modalContent = document.getElementById('calendarModalContent');
-        modalContent.style.maxWidth = '32rem';
+        modalContent.style.maxWidth = '30rem';
 
         // 모달 닫기
         modalHide('calendarModal');
@@ -2010,7 +2343,7 @@ function wireEvents() {
         // 2. gap과 maxWidth도 즉시 변경
         document.getElementById('contentWrapper').style.gap = '0';
         const modalContent = document.getElementById('calendarModalContent');
-        modalContent.style.maxWidth = '32rem';
+        modalContent.style.maxWidth = '30rem';
 
         // 3. 마지막으로 opacity 변경 (이미 레이아웃은 완성됨)
         setTimeout(() => {
