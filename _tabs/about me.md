@@ -9,7 +9,7 @@ order: 4
 M.S. in Artificial Intelligence student at UTSA, based in San Antonio.
 Drawing on my experience in the **banking industry**, I'm interested in building reliable and impactful AI solutions for financial data.
 
-<a href="/resume/" target="_blank" style="display:inline-block; padding:6px 16px; background:#4a9eff; color:#fff; border-radius:6px; text-decoration:none; font-size:0.9rem;">📄 View Resume</a>
+<a href="https://jinhee-ai-kim.github.io/resume/" target="_blank" style="display:inline-block; padding:6px 16px; background:#4a9eff; color:#fff; border-radius:6px; text-decoration:none; font-size:0.9rem;">📄 View Resume</a>
 
 ---
 
