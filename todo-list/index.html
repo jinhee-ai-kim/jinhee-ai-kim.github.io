@@ -212,6 +212,28 @@
 <body class="min-h-screen bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-300">
 
 <!-- ═══════════════════════════════════════════════════════════
+     LOGIN SCREEN
+════════════════════════════════════════════════════════════ -->
+<div id="loginScreen" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-100 dark:bg-slate-950">
+    <div class="card p-10 flex flex-col items-center gap-6 w-full max-w-sm mx-4">
+        <div class="text-4xl">📋</div>
+        <div class="text-center">
+            <h1 class="text-xl font-bold text-slate-800 dark:text-slate-100">TODO List</h1>
+            <p class="text-sm text-slate-400 dark:text-slate-500 mt-1">Sign in to continue</p>
+        </div>
+        <button onclick="signInWithGoogle()"
+            class="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-xl
+                   bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700
+                   text-slate-700 dark:text-slate-200 font-medium text-sm
+                   hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors shadow-sm">
+            <img src="https://www.google.com/favicon.ico" class="w-4 h-4">
+            Continue with Google
+        </button>
+        <p id="loginError" class="text-xs text-red-500 hidden">로그인에 실패했습니다. 다시 시도해주세요.</p>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
      2026 GOALS SECTION
 ════════════════════════════════════════════════════════════ -->
 <div class="hidden lg:block max-w-7xl mx-auto px-5 pt-4 pb-2">
@@ -307,6 +329,11 @@
             <button id="toggleDarkMode"
                     class="btn-ghost p-1.5 text-lg w-5 h-8 flex items-center justify-center">
                 ☀️
+            </button>
+            <button onclick="signOut()"
+                    class="btn-ghost p-1.5 text-sm w-8 h-8 flex items-center justify-center"
+                    title="Sign out">
+                🚪
             </button>
         </div>
     </div>

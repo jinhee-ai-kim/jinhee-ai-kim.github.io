@@ -9,35 +9,50 @@ const GOAL_COLORS = [
 
 // ─── STATE ───────────────────────────────────────────────────────────────────
 const STATE = {
-    tasks:      [],
-    categories: [],
-    goals:      [],
-    schedule:   [],
-    appTitle:   "[Your Name]'s TODO-LIST",
-    darkMode:   false,
-    filter:     'all',
-    search:     '',
-    editingId:  null,
-    sortables:  [],
-    goalSortable: null
+    tasks:        [],
+    categories:   [],
+    goals:        [],
+    schedule:     [],
+    darkMode:     false,
+    filter:       'all',
+    search:       '',
+    editingId:    null,
+    sortables:    [],
+    goalSortable: null,
+    showAllCats:  false,
 };
 
-// ─── LOCAL STORAGE (UI 설정만) ────────────────────────────────────────────────
-const LS_KEYS = {
-    tasks:      'sa_tasks',
-    categories: 'sa_categories',
-    goals:      'sa_goals',
-    schedule:   'sa_schedule',
-    appTitle:   'sa_appTitle',
-    darkMode:   'sa_darkMode'
-};
+// ─── LOCAL STORAGE ───────────────────────────────────────────────
+const LS_DARK_MODE_KEY = 'sa_darkMode';
 
 // ─── SUPABASE ─────────────────────────────────────────────────────────────────
-const SUPABASE_URL  = 'https://nphgxoyzddnxkfwxnwmy.supabase.co';
-const SUPABASE_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5waGd4b3l6ZGRueGtmd3hud215Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU5NDQwMzQsImV4cCI6MjA5MTUyMDAzNH0.kZWiMt1oyq2DDjwr8J6agNme4WUifwmUCtCU-e-rlyo';
-// TODO: Auth 붙이면 이 값을 supabase.auth.getUser().id 로 교체
-const USER_ID = '00000000-0000-0000-0000-000000000001';
+const SUPABASE_URL = 'https://nphgxoyzddnxkfwxnwmy.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5waGd4b3l6ZGRueGtmd3hud215Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU5NDQwMzQsImV4cCI6MjA5MTUyMDAzNH0.kZWiMt1oyq2DDjwr8J6agNme4WUifwmUCtCU-e-rlyo';
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let USER_ID = null;
+
+// ─── AUTH ─────────────────────────────────────────────────────────────────────
+function showLoginScreen()  { document.getElementById('loginScreen').style.display = 'flex'; }
+function hideLoginScreen()  { document.getElementById('loginScreen').style.display = 'none'; }
+
+async function signInWithGoogle() {
+    const { error } = await db.auth.signInWithOAuth({
+        provider: 'google',
+        options: { redirectTo: window.location.origin + window.location.pathname }
+    });
+    if (error) {
+        console.error('[Auth] Google sign-in failed:', error.message);
+        document.getElementById('loginError').classList.remove('hidden');
+    }
+}
+
+async function signOut() {
+    await db.auth.signOut();
+    USER_ID = null;
+    STATE.tasks = []; STATE.categories = []; STATE.goals = []; STATE.schedule = [];
+    showLoginScreen();
+}
 
 // camelCase ↔ snake_case 변환
 function toDbTask(task) {
@@ -46,7 +61,7 @@ function toDbTask(task) {
         user_id:        USER_ID,
         title:          task.title,
         description:    task.description || '',
-        category:       task.category || '',
+        category_id:    task.categoryId || '',
         priority:       task.priority || 'medium',
         status:         task.status || 'todo',
         due_date:       task.dueDate || '',
@@ -62,7 +77,8 @@ function fromDbTask(row) {
         id:            row.id,
         title:         row.title,
         description:   row.description || '',
-        category:      row.category || '',
+
+        categoryId:    row.category_id || '',
         priority:      row.priority || 'medium',
         status:        row.status || 'todo',
         dueDate:       row.due_date || '',
@@ -85,12 +101,25 @@ async function dbDeleteTask(id) {
 }
 
 async function dbSyncCategories() {
-    await db.from('categories').delete().eq('user_id', USER_ID);
     if (STATE.categories.length === 0) return;
-    const { error } = await db.from('categories').insert(
-        STATE.categories.map(c => ({ name: c.name, user_id: USER_ID, sort_order: c.order ?? 0 }))
-    );
-    if (error) console.error('[DB] categories sync failed:', error.message);
+    const rows = STATE.categories.map(c => ({
+        id:         c.id,
+        name:       c.name,
+        user_id:    USER_ID,
+        sort_order: c.order ?? 0,
+        is_visible: c.visible !== false,
+        is_deleted: c.deleted === true
+    }));
+    const { data, error } = await db.from('categories').upsert(rows, { onConflict: 'id' });
+    if (error) {
+        console.error('[DB] categories sync failed:', error.message, error);
+    }
+}
+
+async function dbDeleteCategory(id) {
+    // 실제 삭제 대신 soft delete
+    const { error } = await db.from('categories').update({ is_deleted: true }).eq('id', id);
+    if (error) console.error('[DB] category soft-delete failed:', error.message);
 }
 
 async function dbSyncGoals() {
@@ -120,114 +149,41 @@ async function dbSyncSchedule() {
 
 // ─── DB LOAD ─────────────────────────────────────────────────────────────────
 async function dbLoad() {
-    try {
-        const [tasksRes, catsRes, goalsRes, schedRes] = await Promise.all([
-            db.from('tasks').select('*').eq('user_id', USER_ID).order('sort_order'),
-            db.from('categories').select('*').eq('user_id', USER_ID).order('sort_order'),
-            db.from('goals').select('*').eq('user_id', USER_ID).order('sort_order'),
-            db.from('schedule').select('*').eq('user_id', USER_ID)
-        ]);
+    const [tasksRes, catsRes, goalsRes, schedRes] = await Promise.all([
+        db.from('tasks').select('*').eq('user_id', USER_ID).order('sort_order'),
+        db.from('categories').select('*').eq('user_id', USER_ID).order('sort_order'),
+        db.from('goals').select('*').eq('user_id', USER_ID).order('sort_order'),
+        db.from('schedule').select('*').eq('user_id', USER_ID)
+    ]);
 
-        if (tasksRes.error) throw tasksRes.error;
+    if (tasksRes.error)  console.error('[DB] tasks error:',      tasksRes.error.message);
+    if (catsRes.error)   console.error('[DB] categories error:', catsRes.error.message);
+    if (goalsRes.error)  console.error('[DB] goals error:',      goalsRes.error.message);
+    if (schedRes.error)  console.error('[DB] schedule error:',   schedRes.error.message);
 
-        const hasDbData = tasksRes.data.length > 0 || catsRes.data.length > 0 || goalsRes.data.length > 0;
+    if (tasksRes.error) throw tasksRes.error;
 
-        if (hasDbData) {
-            STATE.tasks      = tasksRes.data.map(fromDbTask);
-            STATE.categories = (catsRes.data || []).map(r => ({ name: r.name, order: r.sort_order ?? 0 }));
-            STATE.goals      = (goalsRes.data || []).map(r => ({ id: r.id, text: r.text, color: r.color, order: r.sort_order ?? 0 }));
-            STATE.schedule   = (schedRes.data || []).map(r => ({
-                id:        r.id,
-                name:      r.name,
-                startSlot: r.start_slot,
-                endSlot:   r.end_slot,
-                color:     r.color
-            }));
-        } else {
-            // DB 비어있음 → localStorage 데이터로 마이그레이션
-            lsLoad();
-            console.log('[DB] No data in DB, migrating from localStorage...');
-            await Promise.all(STATE.tasks.map(t => dbSyncTask(t)));
-            await dbSyncCategories();
-            await dbSyncGoals();
-            await dbSyncSchedule();
-            console.log('[DB] Migration complete');
-        }
-    } catch (err) {
-        console.warn('[DB] Load failed, falling back to localStorage:', err);
-        lsLoad();
-    }
+    STATE.tasks      = tasksRes.data.map(fromDbTask);
+    // is_deleted=true 포함 전체 로드 (task 표출 시 이름 조회용)
+    STATE.categories = (catsRes.data || []).map(r => ({
+        id:      r.id,
+        name:    r.name,
+        order:   r.sort_order ?? 0,
+        visible: r.is_visible !== false,
+        deleted: r.is_deleted === true
+    }));
+    STATE.goals      = (goalsRes.data || []).map(r => ({ id: r.id, text: r.text, color: r.color, order: r.sort_order ?? 0 }));
+    STATE.schedule   = (schedRes.data || []).map(r => ({
+        id:        r.id,
+        name:      r.name,
+        startSlot: r.start_slot,
+        endSlot:   r.end_slot,
+        color:     r.color
+    }));
 }
 
-function lsLoad() {
-    try {
-        const t = localStorage.getItem(LS_KEYS.tasks);
-        const c = localStorage.getItem(LS_KEYS.categories);
-        const g = localStorage.getItem(LS_KEYS.goals);
-        const s = localStorage.getItem(LS_KEYS.schedule);
-        const a = localStorage.getItem(LS_KEYS.appTitle);
-        const d = localStorage.getItem(LS_KEYS.darkMode);
-
-        STATE.tasks      = t ? JSON.parse(t) : [];
-
-        // Migration: schedule format change from Array(24) to event objects
-        const raw = s ? JSON.parse(s) : [];
-        STATE.schedule = (Array.isArray(raw) && raw.length > 0 && typeof raw[0] === 'string')
-            ? []
-            : raw;
-
-        // Migration: convert string array to object array with order
-        let categories = c ? JSON.parse(c) : ['Math', 'AI', 'Languages'];
-        if (Array.isArray(categories) && categories.length > 0 && typeof categories[0] === 'string') {
-            categories = categories.map((name, idx) => ({ name, order: idx }));
-        }
-        STATE.categories = categories;
-        STATE.goals      = g ? JSON.parse(g) : [
-            {
-                id: 'goal_default_read10books',
-                text: 'Read 10 books',
-                order: 0,
-                color: 'goal-blue'
-            }
-        ];
-        STATE.appTitle   = a || "[Your Name]'s TODO-LIST";
-
-        // Check system preference on first visit, use saved preference on subsequent visits
-        if (d !== null) {
-            STATE.darkMode = d !== 'false';
-        } else {
-            // Detect system color scheme preference
-            STATE.darkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        }
-    } catch (err) {
-        console.warn('Failed to load from localStorage:', err);
-        STATE.tasks      = [];
-        STATE.categories = [
-            { name: 'Math', order: 0 },
-            { name: 'AI', order: 1 },
-            { name: 'Languages', order: 2 }
-        ];
-        STATE.goals      = [
-            {
-                id: 'goal_default_read10books',
-                text: 'Read 10 books',
-                order: 0,
-                color: 'goal-blue'
-            }
-        ];
-        STATE.appTitle   = "[Your Name]'s TODO-LIST";
-        STATE.darkMode   = false;
-    }
-}
-
-function lsSave() {
-    // UI 설정만 localStorage에 저장 (데이터는 Supabase에서 관리)
-    try {
-        localStorage.setItem(LS_KEYS.appTitle, STATE.appTitle);
-        localStorage.setItem(LS_KEYS.darkMode, String(STATE.darkMode));
-    } catch (err) {
-        console.warn('Failed to save to localStorage:', err);
-    }
+function saveDarkMode() {
+    localStorage.setItem(LS_DARK_MODE_KEY, String(STATE.darkMode));
 }
 
 // ─── TASK CRUD ────────────────────────────────────────────────────────────────
@@ -244,7 +200,7 @@ function taskCreate(data) {
         id:          createTaskId(),
         title:       data.title.trim(),
         description: (data.description || '').trim(),
-        category:    data.category  || '',
+
         priority:    data.priority  || 'medium',
         status:      data.status    || 'todo',
         dueDate:     data.dueDate   || '',
@@ -347,38 +303,58 @@ function goalsReorder(newOrder) {
 }
 
 // ─── CATEGORY/SUBJECT CRUD ────────────────────────────────────────────────────
+function createCategoryId() {
+    return 'cat_' + Date.now() + '_' + Math.random().toString(36).slice(2, 9);
+}
+
 function categoryCreate(name) {
     const trimmed = name.trim();
-    if (!trimmed || STATE.categories.some(c => c.name === trimmed)) return false;
-    const maxOrder = STATE.categories.length > 0 ? Math.max(...STATE.categories.map(c => c.order ?? 0)) : -1;
-    STATE.categories.push({ name: trimmed, order: maxOrder + 1 });
+    if (!trimmed || STATE.categories.some(c => c.name === trimmed && !c.deleted)) return false;
+    const activeCats = STATE.categories.filter(c => !c.deleted);
+    const maxOrder = activeCats.length > 0 ? Math.max(...activeCats.map(c => c.order ?? 0)) : -1;
+    STATE.categories.push({ id: createCategoryId(), name: trimmed, order: maxOrder + 1, visible: true, deleted: false });
     dbSyncCategories();
     return true;
 }
 
 function categoryRename(oldName, newName) {
     const trimmed = newName.trim();
-    const oldIdx = STATE.categories.findIndex(c => c.name === oldName);
+    const oldIdx = STATE.categories.findIndex(c => c.name === oldName && !c.deleted);
     if (oldIdx === -1) return false;
     if (trimmed === oldName) return true;
-    if (STATE.categories.some(c => c.name === trimmed)) return false;
+    if (STATE.categories.some(c => c.name === trimmed && !c.deleted)) return false;
 
     STATE.categories[oldIdx].name = trimmed;
-    const affectedTasks = STATE.tasks.filter(t => t.category === oldName);
-    affectedTasks.forEach(t => { t.category = trimmed; });
+    // categoryId로 조회하므로 tasks 업데이트 불필요
+    // (구버전 호환) category 텍스트도 함께 업데이트
+
     dbSyncCategories();
-    affectedTasks.forEach(t => dbSyncTask(t));
     return true;
 }
 
 function categoryDelete(name) {
-    const idx = STATE.categories.findIndex(c => c.name === name);
-    if (idx === -1) return;
-    STATE.categories.splice(idx, 1);
-    const affectedTasks = STATE.tasks.filter(t => t.category === name);
-    affectedTasks.forEach(t => { t.category = ''; });
+    const cat = STATE.categories.find(c => c.name === name && !c.deleted);
+    if (!cat) return;
+    cat.deleted = true;
+    cat.visible = false;
+    // STATE에서 제거하지 않음 → task 이름 조회용으로 유지
+    if (cat.id) dbDeleteCategory(cat.id);
+    else dbSyncCategories();
+}
+
+function categoryToggleVisible(name) {
+    const cat = STATE.categories.find(c => c.name === name);
+    if (!cat) return;
+    cat.visible = cat.visible === false; // false → true, true/null/undefined → false
+    if (!cat.visible && STATE.filter === name) STATE.filter = 'all';
     dbSyncCategories();
-    affectedTasks.forEach(t => dbSyncTask(t));
+    renderCategoryFilter();
+    renderBoard();
+}
+
+function toggleShowAllCats() {
+    STATE.showAllCats = !STATE.showAllCats;
+    renderCategoryFilter();
 }
 
 // ─── FILTERING ────────────────────────────────────────────────────────────────
@@ -386,7 +362,11 @@ function getFilteredByStatus(status) {
     const q = STATE.search.toLowerCase().trim();
     return STATE.tasks.filter(task => {
         if (task.status !== status) return false;
-        if (STATE.filter !== 'all' && task.category !== STATE.filter) return false;
+        if (STATE.filter !== 'all') {
+            const filterCat = STATE.categories.find(c => c.name === STATE.filter);
+            const filterCatId = filterCat?.id;
+            if (!filterCatId || task.categoryId !== filterCatId) return false;
+        }
         if (q) {
             const inTitle = task.title.toLowerCase().includes(q);
             const inDesc  = task.description.toLowerCase().includes(q);
@@ -397,6 +377,14 @@ function getFilteredByStatus(status) {
 }
 
 // ─── HELPERS ─────────────────────────────────────────────────────────────────
+
+// categoryId → category name 조회 (삭제된 카테고리도 포함, 구버전 fallback 지원)
+function getCategoryName(task) {
+    if (!task.categoryId) return '';
+    const cat = STATE.categories.find(c => c.id === task.categoryId);
+    return cat?.name || '';
+}
+
 function esc(str) {
     const d = document.createElement('div');
     d.textContent = String(str || '');
@@ -481,10 +469,10 @@ function buildTaskCard(task) {
                 ? `<div class="text-xs text-slate-400 dark:text-slate-500 mt-1 leading-relaxed line-clamp-2">${esc(task.description)}</div>`
                 : ''}
             <div class="flex flex-wrap gap-1.5 mt-2 items-center">
-                ${task.category
+                ${getCategoryName(task)
                     ? `<span class="px-2 py-0.5 rounded-full text-xs font-medium
                                    bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400">
-                           ${esc(task.category)}
+                           ${esc(getCategoryName(task))}
                        </span>`
                     : ''}
                 <span class="px-2 py-0.5 rounded-full text-xs font-semibold ${priCls}">${esc(task.priority)}</span>
@@ -557,28 +545,65 @@ function renderStats() {
 
 function renderCategoryFilter() {
     const el = document.getElementById('categoryList');
-    const sorted = [...STATE.categories].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
-    const items = [
-        { value: 'all', label: '✦ All Tasks' },
-        ...sorted.map(c => ({ value: c.name, label: c.name, catObj: c }))
+    const sorted = [...STATE.categories]
+        .filter(c => !c.deleted)   // 삭제된 카테고리 제외
+        .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+
+    const visibleCats = sorted.filter(c => c.visible !== false);
+    const hiddenCats  = sorted.filter(c => c.visible === false);
+    const hiddenCount = hiddenCats.length;
+
+    const visibleItems = [
+        { value: 'all', label: '✦ All Tasks', catObj: null },
+        ...visibleCats.map(c => ({ value: c.name, label: c.name, catObj: c }))
     ];
 
-    el.innerHTML = items.map(({ value, label, catObj }) => {
+    const renderItem = ({ value, label, catObj }, isHidden = false) => {
         const active = STATE.filter === value;
         const btnClass = active
             ? 'bg-blue-500 text-white shadow-sm shadow-blue-500/20'
-            : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700/60';
+            : isHidden
+                ? 'text-slate-400 dark:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700/60'
+                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700/60';
 
-        return `<div class="flex items-center gap-1 category-item" ${catObj ? `data-category="${esc(label)}"` : ''}>
+        const eyeIcon = catObj
+            ? `<button class="px-1.5 py-1.5 text-slate-300 dark:text-slate-600 hover:text-blue-500 dark:hover:text-blue-400 text-sm transition-colors"
+                    onclick="categoryToggleVisible('${esc(value)}')"
+                    title="${isHidden ? '표시하기' : '숨기기'}">${isHidden ? '👁' : '👁'}</button>`
+            : '';
+
+        return `<div class="flex items-center gap-1 category-item${isHidden ? ' opacity-60' : ''}" ${catObj ? `data-category="${esc(label)}"` : ''}>
             <button
                 class="flex-1 text-left px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 category-btn ${btnClass}"
                 data-filter="${esc(value)}"
             >${esc(label)}</button>
-            ${value !== 'all' ? `<button class="px-2 py-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 text-sm"
+            ${catObj ? eyeIcon : ''}
+            ${catObj ? `<button class="px-2 py-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 text-sm"
                     onclick="showCategoryMenu('${esc(value)}')"
                     title="Manage">⋮</button>` : ''}
         </div>`;
-    }).join('');
+    };
+
+    let html = visibleItems.map(item => renderItem(item, false)).join('');
+
+    if (hiddenCount > 0 || STATE.showAllCats) {
+        const toggleLabel = STATE.showAllCats
+            ? '접기 ▲'
+            : `전체 보기 (${hiddenCount}개 숨김) ▼`;
+        html += `<div class="mt-1 pt-1.5 border-t border-slate-200 dark:border-slate-700/50">
+            <button onclick="toggleShowAllCats()"
+                class="w-full text-left px-3 py-1 text-xs text-slate-400 dark:text-slate-500
+                       hover:text-slate-600 dark:hover:text-slate-300 transition-colors rounded-lg">
+                ${toggleLabel}
+            </button>
+        </div>`;
+    }
+
+    if (STATE.showAllCats && hiddenCount > 0) {
+        html += hiddenCats.map(c => renderItem({ value: c.name, label: c.name, catObj: c }, true)).join('');
+    }
+
+    el.innerHTML = html;
 
     el.querySelectorAll('.category-btn').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -588,7 +613,6 @@ function renderCategoryFilter() {
         });
     });
 
-    // Initialize drag and drop for categories (exclude "All Tasks")
     if (STATE.sortables.categoryList) STATE.sortables.categoryList.destroy();
     STATE.sortables.categoryList = new Sortable(el, {
         draggable: '.category-item[data-category]',
@@ -607,9 +631,12 @@ function renderCategoryFilter() {
 
 function renderCategorySelect() {
     const el = document.getElementById('taskCategory');
-    const sorted = [...STATE.categories].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+    const sorted = [...STATE.categories]
+        .filter(c => !c.deleted && c.visible !== false)
+        .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+    // value = category id (이름 변경 시에도 안전)
     el.innerHTML = `<option value="">None</option>` +
-        sorted.map(c => `<option value="${esc(c.name)}">${esc(c.name)}</option>`).join('');
+        sorted.map(c => `<option value="${esc(c.id)}">${esc(c.name)}</option>`).join('');
 }
 
 function renderGoals() {
@@ -800,9 +827,20 @@ function handleEditTask(id) {
     document.getElementById('modalTitle').textContent = 'Edit Task';
     renderCategorySelect();
 
+    // 현재 task의 category가 숨김 상태면 해당 항목만 드롭다운에 추가
+    if (task.categoryId) {
+        const currentCat = STATE.categories.find(c => c.id === task.categoryId);
+        if (currentCat && !currentCat.deleted && currentCat.visible === false) {
+            const opt = document.createElement('option');
+            opt.value = currentCat.id;
+            opt.textContent = `${currentCat.name} (숨김)`;
+            document.getElementById('taskCategory').appendChild(opt);
+        }
+    }
+
     document.getElementById('taskTitle').value       = task.title;
     document.getElementById('taskDescription').value = task.description;
-    document.getElementById('taskCategory').value    = task.category;
+    document.getElementById('taskCategory').value    = task.categoryId || '';
     document.getElementById('taskPriority').value    = task.priority;
     document.getElementById('taskStatus').value      = task.status;
     document.getElementById('taskDueDate').value     = task.dueDate;
@@ -894,7 +932,7 @@ function renderArchiveList() {
             <div class="flex items-center gap-3 justify-between">
                 <div class="flex items-center gap-2 min-w-0 flex-wrap">
                     <div class="text-sm font-medium text-slate-800 dark:text-slate-100 whitespace-nowrap">${esc(task.title)}</div>
-                    ${task.category ? `<span class="px-1.5 py-0.5 rounded text-xs bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 whitespace-nowrap">${esc(task.category)}</span>` : ''}
+                    ${getCategoryName(task) ? `<span class="px-1.5 py-0.5 rounded text-xs bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 whitespace-nowrap">${esc(getCategoryName(task))}</span>` : ''}
                     <span class="text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap">📅 ${task.completedDate}</span>
                 </div>
                 <div class="flex items-center gap-1 flex-shrink-0">
@@ -982,7 +1020,15 @@ function showTaskDetail(taskId, editMode = false) {
 
     // ✅ Edit mode 렌더링
     if (editMode) {
-        const categories = STATE.categories.map(c => c.name);
+        // 표시 중인 카테고리 + 현재 task의 숨김 카테고리(있을 경우)만 포함
+        const currentCatInDetail = task.categoryId
+            ? STATE.categories.find(c => c.id === task.categoryId)
+            : null;
+        const categories = STATE.categories.filter(c =>
+            !c.deleted && (c.visible !== false || c.id === task.categoryId)
+        ).map(c =>
+            (c.visible === false) ? { ...c, name: `${c.name} (숨김)` } : c
+        );
 
         // ✅ 현재 form의 status 값을 확인 (status 변경 시 UI 업데이트)
         const statusSelect = document.getElementById('statusEdit');
@@ -1025,7 +1071,7 @@ function showTaskDetail(taskId, editMode = false) {
                     <p class="text-xs text-slate-400 dark:text-slate-500 uppercase tracking-wide">Category</p>
                     <select id="categoryEdit" class="input-field mt-1">
                         <option value="">- None -</option>
-                        ${categories.map(c => `<option value="${esc(c)}" ${task.category === c ? 'selected' : ''}>${esc(c)}</option>`).join('')}
+                        ${categories.map(c => `<option value="${esc(c.id)}" ${task.categoryId === c.id ? 'selected' : ''}>${esc(c.name)}</option>`).join('')}
                     </select>
                 </div>
 
@@ -1085,10 +1131,10 @@ function showTaskDetail(taskId, editMode = false) {
                         <p class="text-xs text-slate-400 dark:text-slate-500 uppercase tracking-wide">Status</p>
                         <p class="text-sm font-medium mt-1">${status.emoji} ${status.text}</p>
                     </div>
-                    ${task.category ? `
+                    ${getCategoryName(task) ? `
                     <div>
                         <p class="text-xs text-slate-400 dark:text-slate-500 uppercase tracking-wide">Category</p>
-                        <p class="text-sm font-medium mt-1 px-2 py-1 rounded bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 inline-block">${esc(task.category)}</p>
+                        <p class="text-sm font-medium mt-1 px-2 py-1 rounded bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 inline-block">${esc(getCategoryName(task))}</p>
                     </div>
                     ` : ''}
                 </div>
@@ -1181,7 +1227,10 @@ function saveTaskEdits(taskId) {
         updates.status = statusInput.value;
     }
     if (categoryInput) {
-        updates.category = categoryInput.value || null;
+        const catId = categoryInput.value || '';
+        const cat = STATE.categories.find(c => c.id === catId);
+        updates.categoryId = catId;
+
     }
     if (priorityInput) {
         updates.priority = priorityInput.value || null;
@@ -1320,7 +1369,7 @@ function handleFormSubmit(e) {
     const data = {
         title,
         description: document.getElementById('taskDescription').value,
-        category:    document.getElementById('taskCategory').value,
+        categoryId:  document.getElementById('taskCategory').value,
         priority:    document.getElementById('taskPriority').value,
         status:      status,
         dueDate:     (status === 'done' || status === 'archive') ? '' : document.getElementById('taskDueDate').value,
@@ -1513,7 +1562,7 @@ function wireEvents() {
                 return `
                     <div class="p-2 rounded-lg bg-slate-100 dark:bg-slate-700/40 text-sm flex items-center gap-2 cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-600/40 transition-colors" onclick="showTaskDetail('${esc(t.id)}')">
                         <div class="font-medium text-slate-800 dark:text-slate-100 truncate flex-1">${esc(t.title)}</div>
-                        ${t.category ? `<span class="px-1.5 py-0.5 rounded text-xs bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 flex-shrink-0">${esc(t.category)}</span>` : ''}
+                        ${getCategoryName(t) ? `<span class="px-1.5 py-0.5 rounded text-xs bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 flex-shrink-0">${esc(getCategoryName(t))}</span>` : ''}
                         <span class="${status.color} text-xs font-medium ml-auto flex-shrink-0">${status.emoji} ${status.text}</span>
                     </div>
                 `;
@@ -1624,7 +1673,7 @@ function wireEvents() {
     document.getElementById('toggleDarkMode').addEventListener('click', function() {
         STATE.darkMode = !STATE.darkMode;
         applyDarkMode();
-        lsSave();
+        saveDarkMode();
     });
 
     // Search
@@ -1751,18 +1800,39 @@ function wireEvents() {
 }
 
 // ─── INIT ─────────────────────────────────────────────────────────────────────
-async function init() {
-    const a = localStorage.getItem(LS_KEYS.appTitle);
-    const d = localStorage.getItem(LS_KEYS.darkMode);
-    if (a) STATE.appTitle = a;
-    if (d !== null) STATE.darkMode = d !== 'false';
-    else STATE.darkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
-
-    applyDarkMode();
-    wireEvents();
-    await dbLoad();
+async function loadAndRender() {
+    try { await dbLoad(); } catch (err) { console.error('[DB] Load failed:', err); }
     renderAll();
 }
+
+async function init() {
+    const d = localStorage.getItem(LS_DARK_MODE_KEY);
+    STATE.darkMode = d !== null ? d !== 'false' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+    applyDarkMode();
+    wireEvents(); // 항상 먼저 등록 (dark mode 등 로그인 전에도 동작해야 하는 이벤트)
+
+    // 세션 확인
+    const { data: { session } } = await db.auth.getSession();
+    if (!session) {
+        showLoginScreen();
+        return;
+    }
+
+    USER_ID = session.user.id;
+    hideLoginScreen();
+    await loadAndRender();
+}
+
+// 로그인/로그아웃 상태 변화 감지
+// SIGNED_IN: Google OAuth는 페이지 리로드를 동반하므로 init()에서 처리
+// SIGNED_OUT: 여기서만 처리
+db.auth.onAuthStateChange((event, session) => {
+    if (event === 'SIGNED_OUT') {
+        USER_ID = null;
+        STATE.tasks = []; STATE.categories = []; STATE.goals = []; STATE.schedule = [];
+        showLoginScreen();
+    }
+});
 
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
