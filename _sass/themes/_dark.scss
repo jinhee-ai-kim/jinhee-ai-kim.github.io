@@ -153,12 +153,13 @@
   .home-project-card,
   .app-card {
     --bs-card-bg: var(--card-bg);
+
     border-color: var(--main-border-color);
   }
 
   .home-tech-badge,
   .app-tech-badge {
-    background-color: rgba(129, 140, 248, 0.18);
+    background-color: rgb(129 140 248 / 18%);
     color: #818cf8;
   }
 
