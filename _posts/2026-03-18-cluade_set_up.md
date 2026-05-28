@@ -77,7 +77,7 @@ native installation exists but C:\Users\...\bin is not in your Path
 
 To fix this:
 
-1. Copy the path shown in the message  
+1. Copy the path shown after “but" in the message (the `C:\Users\...\bin` part).
 
 2. Go to **System → Advanced system settings**  
 

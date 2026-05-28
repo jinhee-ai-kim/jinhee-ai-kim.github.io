@@ -1,0 +1,94 @@
+---
+layout: page
+---
+
+{% include lang.html %}
+
+<div class="row g-4 mt-1">
+  {% for app in site.data.projects %}
+  {% assign card_id = app.github_repo | slugify %}
+  <div class="col-12 col-sm-6 col-xl-4">
+    <div class="card app-card h-100" id="app-{{ card_id }}">
+      {% if app.image %}
+      <img src="{{ app.image | relative_url }}" class="card-img-top app-card-img" alt="{{ app.name }}">
+      {% endif %}
+      <div class="card-body d-flex flex-column">
+        <div class="mb-2">
+          {% for tech in app.tech_stack %}
+          <span class="badge app-tech-badge me-1 mb-1">{{ tech }}</span>
+          {% endfor %}
+        </div>
+        <h5 class="card-title fw-semibold mb-1">{{ app.name }}</h5>
+        <p class="card-text text-muted small flex-grow-1 mb-3">{{ app.description }}</p>
+        {% if app.github_repo and app.github_repo != "" %}
+        <div class="app-github-stats d-flex gap-3 mb-3 text-muted small">
+          <span title="Stars">
+            <i class="fas fa-star fa-fw"></i>
+            <span class="stat-stars" data-repo="{{ app.github_repo }}">—</span>
+          </span>
+          <span title="Forks">
+            <i class="fas fa-code-branch fa-fw"></i>
+            <span class="stat-forks" data-repo="{{ app.github_repo }}">—</span>
+          </span>
+        </div>
+        {% endif %}
+        <div class="d-flex gap-2 flex-wrap">
+          {% if app.github_repo and app.github_repo != "" %}
+          <a href="https://github.com/{{ site.github.username }}/{{ app.github_repo }}"
+             class="btn btn-sm app-btn-github"
+             target="_blank" rel="noopener noreferrer">
+            <i class="fab fa-github me-1"></i>GitHub
+          </a>
+          {% endif %}
+          {% if app.demo_url and app.demo_url != "" %}
+          <a href="{{ app.demo_url }}"
+             class="btn btn-sm app-btn-demo"
+             target="_blank" rel="noopener noreferrer">
+            <i class="fas fa-external-link-alt me-1"></i>Demo
+          </a>
+          {% endif %}
+          {% if app.post_url and app.post_url != "" %}
+          <a href="{{ app.post_url }}"
+             class="btn btn-sm app-btn-post"
+             target="_blank" rel="noopener noreferrer">
+            <i class="fas fa-pen me-1"></i>Post
+          </a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<script>
+(function () {
+  const owner = '{{ site.github.username }}';
+
+  function formatCount(n) {
+    if (n >= 1000) return (n / 1000).toFixed(1) + 'k';
+    return String(n);
+  }
+
+  async function fetchRepoStats(repo) {
+    try {
+      const res = await fetch('https://api.github.com/repos/' + owner + '/' + repo);
+      if (!res.ok) return null;
+      return await res.json();
+    } catch (_) {
+      return null;
+    }
+  }
+
+  document.querySelectorAll('.stat-stars').forEach(async function (el) {
+    const repo = el.dataset.repo;
+    if (!repo) return;
+    const data = await fetchRepoStats(repo);
+    if (!data) return;
+    el.textContent = formatCount(data.stargazers_count);
+    el.closest('.app-github-stats')
+      .querySelector('.stat-forks')
+      .textContent = formatCount(data.forks_count);
+  });
+})();
+</script>

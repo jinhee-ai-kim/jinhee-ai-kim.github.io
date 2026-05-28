@@ -1,0 +1,60 @@
+# 앱 목록 
+# github_repo: GitHub 레포 이름만 입력 (username 제외)
+# demo_url: 데모 없으면 "" 로 입력
+# post_url: 앱 상세 페이지 URL (없으면 생략 가능)
+# image: 스크린샷 경로 (없으면 생략 가능)
+
+- name: "Tacoman"
+  description: " A Fun Arcade Web Game built with Python and PyTorch."
+  github_repo: "taco-game"
+  image: "/assets/img/posts/260317_tacoman.png"
+  demo_url: "https://jinhee-ai-kim.github.io/taco-game/"
+  post_url: "/posts/tacoman/"
+  tech_stack:
+    - Python
+    - PyTorch
+    - HTML/CSS/JS
+
+- name: "TODO APP"
+  description: "A simple TODO app with mobile-friendly and responsive design."
+  github_repo: "todo-app"
+  image: "/assets/img/posts/260527_todoapp.png"
+  demo_url: "https://jinhee-ai-kim.github.io/todo-app/"
+  post_url: ""
+  tech_stack:
+    - HTML
+    - Tailwind CSS
+    - Supabase (PostgreSQL)
+
+- name: "TEST"
+  description: "TEST TEST TEST."
+  github_repo: ""
+  demo_url: ""
+  tech_stack:
+    - Jekyll
+    - GitHub Pages
+
+- name: "TEST"
+  description: "TEST TEST TEST."
+  github_repo: ""
+  demo_url: "https://jinhee-ai-kim.github.io"
+  tech_stack:
+    - Jekyll
+    - GitHub Pages
+
+- name: "TEST"
+  description: "TEST TEST TEST."
+  github_repo: "jinhee-ai-kim.github.io"
+  demo_url: ""
+  tech_stack:
+    - Jekyll
+    - GitHub Pages
+
+- name: "TEST"
+  description: "TEST TEST TEST."
+  github_repo: ""
+  demo_url: ""
+  post_url: "/posts/tacoman/"
+  tech_stack:
+    - Jekyll
+    - GitHub Pages

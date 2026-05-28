@@ -1,7 +1,7 @@
 ---
 # the default layout is 'page'
 icon: fas fa-info-circle
-order: 4
+order: 5
 ---
 
 # 👋 Hi there, I'm Jinhee!
@@ -40,27 +40,3 @@ Drawing on my experience in the **banking industry**, I'm interested in building
 - **LLMs & RAG** — Retrieval-Augmented Generation
 - **Computer Vision** — Object Detection (Faster R-CNN, YOLO)
 
-## 🧱 Featured Projects
-
-### Finance RAG Chatbot
-
-A RAG chatbot that retrieves and summarizes information from complex financial PDFs.
-
-- Custom semantic chunking based on financial clause structure (regex)
-- MMR + LLM-based reranking (Upstage Solar Pro 2) to improve retrieval accuracy
-- Interactive web UI built with Streamlit
-
-**Stack:** Python 3.12 · LangChain · ChromaDB · Streamlit · Upstage Solar API
-[View on GitHub →](https://github.com/jinhee-ai-kim/finance-rag-chatbot)
-
----
-
-### Explainable Credit Default Prediction (XAI)
-
-Comparative study on credit card default prediction using SHAP and DiCE for model interpretability.
-
-- SHAP for feature attribution (Logistic Regression) vs. DiCE for counterfactuals (XGBoost)
-- Generated "what-if" scenarios showing minimal changes needed to flip a prediction
-
-**Stack:** Python · Scikit-learn · XGBoost · SHAP · DiCE · Pandas
-[View on GitHub →](https://github.com/jinhee-ai-kim/credit-default-xai)
