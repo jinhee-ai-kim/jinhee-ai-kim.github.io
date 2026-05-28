@@ -24,7 +24,7 @@
   tech_stack:
     - HTML
     - Tailwind CSS
-    - Supabase (PostgreSQL)
+    - Supabase
 
 - name: "TEST"
   description: "TEST TEST TEST."

@@ -56,9 +56,10 @@ layout: default
       View all <i class="fas fa-arrow-right fa-fw"></i>
     </a>
   </div>
-  <div class="row g-3">
+  <!-- desktop: 3-col grid / mobile: swipe slider -->
+  <div class="home-projects-slider">
     {% for project in site.data.projects limit: 3 %}
-    <div class="col-12 col-sm-4">
+    <div class="home-projects-slide">
       <a href="https://github.com/{{ site.github.username }}/{{ project.github_repo }}"
          class="home-project-card card h-100 text-decoration-none"
          target="_blank" rel="noopener noreferrer">
@@ -77,6 +78,43 @@ layout: default
     </div>
     {% endfor %}
   </div>
+  <div class="home-projects-dots d-sm-none" aria-hidden="true">
+    {% for project in site.data.projects limit: 3 %}
+    <span class="home-projects-dot{% if forloop.first %} active{% endif %}"></span>
+    {% endfor %}
+  </div>
+
+  <script>
+  (function () {
+    var slider = document.querySelector('.home-projects-slider');
+    var dots = document.querySelectorAll('.home-projects-dot');
+    if (!slider || window.innerWidth >= 576) return;
+
+    var slides = slider.querySelectorAll('.home-projects-slide');
+    var current = 0;
+    var timer;
+
+    function goTo(index) {
+      current = (index + slides.length) % slides.length;
+      slider.scrollTo({ left: slides[current].offsetLeft, behavior: 'smooth' });
+      dots.forEach(function (d, i) { d.classList.toggle('active', i === current); });
+    }
+
+    function startAuto() { timer = setInterval(function () { goTo(current + 1); }, 3000); }
+    function stopAuto() { clearInterval(timer); }
+
+    startAuto();
+    slider.addEventListener('touchstart', stopAuto, { passive: true });
+    slider.addEventListener('touchend', function () {
+      var closest = Array.from(slides).reduce(function (prev, slide) {
+        return Math.abs(slide.offsetLeft - slider.scrollLeft) < Math.abs(prev.offsetLeft - slider.scrollLeft) ? slide : prev;
+      });
+      current = Array.from(slides).indexOf(closest);
+      dots.forEach(function (d, i) { d.classList.toggle('active', i === current); });
+      startAuto();
+    }, { passive: true });
+  })();
+  </script>
 </section>
 <hr class="mb-4">
 {% endif %}
