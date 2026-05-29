@@ -4,19 +4,31 @@
 # post_url: 앱 상세 페이지 URL (없으면 생략 가능)
 # image: 스크린샷 경로 (없으면 생략 가능)
 
+- name: "AI Scam Detector"
+  description: "pastes SMS or email, returns scam probability with SHAP word attribution and pattern flags."
+  github_repo: "AI-Scam-Detector"
+  image: "/assets/img/posts/260529_ai_scam_detector.png"
+  demo_url: "https://ai-scam-detector-3aejx6znbq2rul6pn4awed.streamlit.app/"
+  post_url: ""
+  tech_stack:
+    - Python
+    - Streamlit
+    - XGBoost
+    - SHAP
+
 - name: "Tacoman"
-  description: " A Fun Arcade Web Game built with Python and PyTorch."
+  description: "A Fun Arcade Web Game built with Pygame — works on mobile too!"
   github_repo: "taco-game"
   image: "/assets/img/posts/260317_tacoman.png"
   demo_url: "https://jinhee-ai-kim.github.io/taco-game/"
   post_url: "/posts/tacoman/"
   tech_stack:
     - Python
-    - PyTorch
+    - Pygame
     - HTML/CSS/JS
 
 - name: "TODO APP"
-  description: "A simple TODO app with mobile-friendly and responsive design."
+  description: "Stay organized anywhere — works on both PC & mobile."
   github_repo: "todo-app"
   image: "/assets/img/posts/260527_todoapp.png"
   demo_url: "https://jinhee-ai-kim.github.io/todo-app/"
@@ -25,36 +37,3 @@
     - HTML
     - Tailwind CSS
     - Supabase
-
-- name: "TEST"
-  description: "TEST TEST TEST."
-  github_repo: ""
-  demo_url: ""
-  tech_stack:
-    - Jekyll
-    - GitHub Pages
-
-- name: "TEST"
-  description: "TEST TEST TEST."
-  github_repo: ""
-  demo_url: "https://jinhee-ai-kim.github.io"
-  tech_stack:
-    - Jekyll
-    - GitHub Pages
-
-- name: "TEST"
-  description: "TEST TEST TEST."
-  github_repo: "jinhee-ai-kim.github.io"
-  demo_url: ""
-  tech_stack:
-    - Jekyll
-    - GitHub Pages
-
-- name: "TEST"
-  description: "TEST TEST TEST."
-  github_repo: ""
-  demo_url: ""
-  post_url: "/posts/tacoman/"
-  tech_stack:
-    - Jekyll
-    - GitHub Pages
