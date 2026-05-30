@@ -4,15 +4,34 @@
 # post_url: 앱 상세 페이지 URL (없으면 생략 가능)
 # image: 스크린샷 경로 (없으면 생략 가능)
 
+- name: "XAI-Based Loan Loss Mitigation Framework"
+  description: "A framework that uses XAI techniques to identify and mitigate potential loan losses, providing actionable insights for financial institutions."
+  github_repo: "CS5283-xai-loan-loss-mitigation"
+  demo_url: "https://cs5283-xai-loan-loss-mitigation-pwhhmzjbued645x2awtinb.streamlit.app/"
+  post_url: ""
+  tech_stack:
+    - XGBoost
+    - SHAP
+    - dice-ml
+
+- name: "Object Detection"
+  description: "Comparing Faster R-CNN (2-stage detector) vs YOLOv8s (1-stage detector) for indoor object detection on Open Images V7 (10 classes)."
+  github_repo: "CS6283-object-detection"
+  demo_url: "https://object-detection-den6bc4mnkre6lj6eybbrb.streamlit.app/"
+  post_url: ""
+  tech_stack:
+    - Pytorch
+    - Faster R-CNN
+    - YOLOv8s
+  
+
 - name: "AI Scam Detector"
   description: "pastes SMS or email, returns scam probability with SHAP word attribution and pattern flags."
   github_repo: "AI-Scam-Detector"
-  image: "/assets/img/posts/260529_ai_scam_detector.png"
   demo_url: "https://ai-scam-detector-3aejx6znbq2rul6pn4awed.streamlit.app/"
   post_url: ""
   tech_stack:
     - Python
-    - Streamlit
     - XGBoost
     - SHAP
 
