@@ -17,7 +17,7 @@
 - name: "Object Detection"
   description: "Comparing Faster R-CNN (2-stage detector) vs YOLOv8s (1-stage detector) for indoor object detection on Open Images V7 (10 classes)."
   github_repo: "CS6283-object-detection"
-  demo_url: "https://object-detection-den6bc4mnkre6lj6eybbrb.streamlit.app/"
+  demo_url: "https://cs6283-object-detection-btjvwltjebzvcejk7gj28k.streamlit.app/"
   post_url: ""
   tech_stack:
     - Pytorch
